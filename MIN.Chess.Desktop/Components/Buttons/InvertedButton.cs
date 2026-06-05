@@ -1,0 +1,42 @@
+﻿using System.ComponentModel;
+using MIN.Chess.Desktop.Contracts.Schemes;
+
+namespace MIN.Chess.Desktop.Components.Buttons
+{
+    /// <summary>
+    /// Инвертированная <see cref="Button"/>
+    /// </summary>
+    [DefaultEvent("Click")]
+    public class InvertedButton : Button
+    {
+        /// <summary>
+        /// Инициализирует новый экземпляр <see cref="InvertedButton"/>
+        /// </summary>
+        public InvertedButton()
+        {
+            ApplyAppStyles();
+        }
+
+        private void ApplyAppStyles()
+        {
+            base.Font = FontScheme.Emphasis;
+
+            base.BackColor = ColorScheme.InputFieldBackground;
+            base.ForeColor = ColorScheme.SecondaryAccent;
+
+            FlatStyle = FlatStyle.Flat;
+            FlatAppearance.BorderColor = ColorScheme.SecondaryAccent;
+            FlatAppearance.BorderSize = 2;
+        }
+
+        /// <inheritdoc cref="Control.OnHandleCreated(EventArgs)"/>
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            if (!DesignMode)
+            {
+                ApplyAppStyles();
+            }
+        }
+    }
+}

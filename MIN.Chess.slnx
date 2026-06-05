@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Project Path="MIN.Chess.Desktop/MIN.Chess.Desktop.csproj" />
+  <Project Path="MIN.Chess.Logic/MIN.Chess.Logic.csproj" Id="141b2519-2e58-4cb7-bc79-7cafa5d82e13" />
+</Solution>

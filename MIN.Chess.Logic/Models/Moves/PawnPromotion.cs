@@ -1,0 +1,52 @@
+﻿using MIN.Chess.Logic.Enums;
+using MIN.Chess.Logic.Models.Coordination;
+using MIN.Chess.Logic.Models.Pieces;
+
+namespace MIN.Chess.Logic.Models.Moves;
+
+/// <inheritdoc cref="MoveType.PawnPromotion"/>
+public class PawnPromotion : Move
+{
+    private readonly PieceType newType;
+
+    /// <inheritdoc />
+    public override MoveType Type => MoveType.PawnPromotion;
+
+    /// <inheritdoc />
+    public override Position FromPos { get; }
+
+    /// <inheritdoc />
+    public override Position ToPos { get; }
+
+    /// <summary>
+    /// Инициализирует новый экземпляр <see cref="NormalMove"/>
+    /// </summary>
+    public PawnPromotion(Position from, Position to, PieceType newType)
+    {
+        FromPos = from;
+        ToPos = to;
+        this.newType = newType;
+    }
+
+    private Piece CreatePromotionPiece(Player color)
+        => newType switch
+        {
+            PieceType.Knight => new Knight(color),
+            PieceType.Bishop => new Bishop(color),
+            PieceType.Rook => new Rook(color),
+            _ => new Queen(color)
+        };
+
+    /// <inheritdoc />
+    public override bool Execute(Board board)
+    {
+        var piece = board[FromPos];
+        board[FromPos] = null!;
+
+        var promotionPiece = CreatePromotionPiece(piece!.Color);
+        board[ToPos] = promotionPiece;
+        piece?.HasMoved = true;
+
+        return true;
+    }
+}

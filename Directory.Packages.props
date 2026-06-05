@@ -1,0 +1,13 @@
+<Project>
+  <!-- This file prevents unintended imports of unrelated MSBuild files -->
+  <PropertyGroup>
+    <!-- Включение централизованного управления пакетами -->
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Включение возможности явного указания версий транзитивных зависимостей -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <!-- Явное включение возможности переопределять версии пакетов -->
+    <EnablePackageVersionOverride>true</EnablePackageVersionOverride>
+  </PropertyGroup>
+  <ItemGroup>
+  </ItemGroup>
+</Project>
