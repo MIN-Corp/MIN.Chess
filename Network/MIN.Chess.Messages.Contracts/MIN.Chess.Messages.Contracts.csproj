@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Ipc\Services\MIN.Ipc.Services\MIN.Ipc.Services.csproj" />
+  </ItemGroup>
+
 </Project>

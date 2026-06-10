@@ -1,8 +1,11 @@
-﻿namespace MIN.Chess.Messages.Messages;
+﻿using MIN.Chess.Messages.Contracts.Enums;
+using MIN.Chess.Messages.Contracts.Models;
 
-/// <inheritdoc cref="MessageType.RestartRequest" />
-public record RestartRequestMessage : BaseMessage
+namespace MIN.Chess.Messages.Messages;
+
+/// <inheritdoc cref="NetworkMessageType.RestartRequest" />
+public record RestartRequestMessage : BaseNetworkMessage
 {
     /// <inheritdoc />
-    public override MessageType MessageType => MessageType.RestartRequest;
+    public override NetworkMessageType MessageType => NetworkMessageType.RestartRequest;
 }

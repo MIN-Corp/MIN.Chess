@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Serialization\MIN.Ipc.Serialization.Json\MIN.Ipc.Serialization.Json.csproj" />
+    <ProjectReference Include="..\..\Transport\MIN.Ipc.Transport.NamedPipes\MIN.Ipc.Transport.NamedPipes.csproj" />
+    <ProjectReference Include="..\MIN.Ipc.Services.Contracts\MIN.Ipc.Services.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

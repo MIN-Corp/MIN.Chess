@@ -1,13 +1,15 @@
 ﻿using MIN.Chess.Logic.Enums;
 using MIN.Chess.Logic.Models;
+using MIN.Chess.Messages.Contracts.Enums;
+using MIN.Chess.Messages.Contracts.Models;
 
 namespace MIN.Chess.Messages.Messages;
 
-/// <inheritdoc cref="MessageType.StateUpdate" />
-public record StateUpdateMessage : BaseMessage
+/// <inheritdoc cref="NetworkMessageType.StateUpdate" />
+public record StateUpdateMessage : BaseNetworkMessage
 {
     /// <inheritdoc />
-    public override MessageType MessageType => MessageType.StateUpdate;
+    public override NetworkMessageType MessageType => NetworkMessageType.StateUpdate;
 
     /// <summary>
     /// Доска с фигурами

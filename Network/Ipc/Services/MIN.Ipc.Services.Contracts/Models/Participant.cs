@@ -1,4 +1,4 @@
-﻿namespace MIN.Chess.Messages.Contracts.Models;
+﻿namespace MIN.Ipc.Services.Contracts.Models;
 
 /// <summary>
 /// Участник

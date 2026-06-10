@@ -1,10 +1,13 @@
-﻿namespace MIN.Chess.Messages.Messages;
+﻿using MIN.Chess.Messages.Contracts.Enums;
+using MIN.Chess.Messages.Contracts.Models;
 
-/// <inheritdoc cref="MessageType.Error" />
-public record ErrorMessage : BaseMessage
+namespace MIN.Chess.Messages.Messages;
+
+/// <inheritdoc cref="NetworkMessageType.Error" />
+public record ErrorMessage : BaseNetworkMessage
 {
     /// <inheritdoc />
-    public override MessageType MessageType => MessageType.Error;
+    public override NetworkMessageType MessageType => NetworkMessageType.Error;
 
     /// <summary>
     /// Сообщение об ошибке

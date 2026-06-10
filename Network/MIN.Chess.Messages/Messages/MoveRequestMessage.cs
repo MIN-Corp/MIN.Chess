@@ -1,18 +1,20 @@
 ﻿using MIN.Chess.Logic.Enums;
 using MIN.Chess.Logic.Models.Coordination;
+using MIN.Chess.Messages.Contracts.Enums;
+using MIN.Chess.Messages.Contracts.Models;
 
 namespace MIN.Chess.Messages.Messages;
 
-/// <inheritdoc cref="MessageType.MoveRequest" />
-public record MoveRequestMessage : BaseMessage
+/// <inheritdoc cref="NetworkMessageType.MoveRequest" />
+public record MoveRequestMessage : BaseNetworkMessage
 {
     /// <inheritdoc />
-    public override MessageType MessageType => MessageType.MoveRequest;
+    public override NetworkMessageType MessageType => NetworkMessageType.MoveRequest;
 
     /// <summary>
     /// Тип хода
     /// </summary>
-    public MoveType Type { get; }
+    public MoveType MoveType { get; }
 
     /// <summary>
     /// С какой позиции

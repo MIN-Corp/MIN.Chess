@@ -1,9 +1,9 @@
-﻿namespace MIN.Chess.Messages;
+﻿namespace MIN.Chess.Messages.Contracts.Enums;
 
 /// <summary>
 /// Тип сообщения
 /// </summary>
-public enum MessageType : byte
+public enum NetworkMessageType : byte
 {
     /// <summary>
     /// Запрос на ход
@@ -36,14 +36,14 @@ public enum MessageType : byte
     Error = 5,
 
     /// <summary>
-    /// Присоединение участника
+    /// Присоединение оппонента
     /// </summary>
-    ParticipantConnected = 6,
+    OpponentConnected = 6,
 
     /// <summary>
-    /// Отсоединения участника
+    /// Отсоединения оппонента
     /// </summary>
-    ParticipantDisconnected = 7,
+    OpponentDisconnected = 7,
 
     /// <summary>
     /// Начало игры

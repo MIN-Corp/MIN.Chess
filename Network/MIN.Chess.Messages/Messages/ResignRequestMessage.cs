@@ -1,8 +1,11 @@
-﻿namespace MIN.Chess.Messages.Messages;
+﻿using MIN.Chess.Messages.Contracts.Enums;
+using MIN.Chess.Messages.Contracts.Models;
 
-/// <inheritdoc cref="MessageType.ResignRequest" />
-public record ResignRequestMessage : BaseMessage
+namespace MIN.Chess.Messages.Messages;
+
+/// <inheritdoc cref="NetworkMessageType.ResignRequest" />
+public record ResignRequestMessage : BaseNetworkMessage
 {
     /// <inheritdoc />
-    public override MessageType MessageType => MessageType.ResignRequest;
+    public override NetworkMessageType MessageType => NetworkMessageType.ResignRequest;
 }
