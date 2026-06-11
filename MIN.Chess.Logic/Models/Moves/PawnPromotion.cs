@@ -7,7 +7,10 @@ namespace MIN.Chess.Logic.Models.Moves;
 /// <inheritdoc cref="MoveType.PawnPromotion"/>
 public class PawnPromotion : Move
 {
-    private readonly PieceType newType;
+    /// <summary>
+    /// Новый тип фигуры
+    /// </summary>
+    public PieceType NewType;
 
     /// <inheritdoc />
     public override MoveType Type => MoveType.PawnPromotion;
@@ -25,11 +28,11 @@ public class PawnPromotion : Move
     {
         FromPos = from;
         ToPos = to;
-        this.newType = newType;
+        NewType = newType;
     }
 
     private Piece CreatePromotionPiece(Player color)
-        => newType switch
+        => NewType switch
         {
             PieceType.Knight => new Knight(color),
             PieceType.Bishop => new Bishop(color),

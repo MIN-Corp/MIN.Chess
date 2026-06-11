@@ -1,41 +1,25 @@
-using System.IO.Pipes;
-using System.Text.Json;
-using MIN.Chess.Client.Contracts.Models;
+using System.Diagnostics;
 using MIN.Chess.Client.Forms;
+using MIN.Ipc.Services;
 
 namespace MIN.Chess.Client;
 
 static internal class Program
 {
     /// <summary>
-    ///  The main entry point for the application.
+    /// The main entry point for the application.
     /// </summary>
     [STAThread]
     private static async Task Main(string[] args)
     {
         if (args.Length == 0)
         {
-            Console.Write("Chess Client requires args");
+            Debug.WriteLine("Client requires MIN connection args");
             return;
         }
 
-        Console.Write($"GOT ARGS: {args[0]}");
-
-        var connInfo = JsonSerializer.Deserialize<ConnectionInfo>(args[0]);
-
-        if (connInfo?.Type == "pipe")
-        {
-            using var pipe = new NamedPipeClientStream(".", connInfo.Value, PipeDirection.InOut);
-            await pipe.ConnectAsync(5000);
-
-            //// Дальше — length-prefixed JSON
-            //await SendAsync(pipe, new { type = "move", from = "e2", to = "e4" });
-            //var update = await ReadAsync(pipe); // StateUpdate
-        }
-
-        // To customize application configuration such as set high DPI settings or default font,
-        // see https://aka.ms/applicationconfiguration.
+        var appCts = new CancellationTokenSource();
         ApplicationConfiguration.Initialize();
-        Application.Run(new MainForm());
+        Application.Run(new MainForm(new ClientProcessBridge(), appCts, args[0]));
     }
 }

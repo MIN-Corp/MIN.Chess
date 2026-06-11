@@ -14,17 +14,17 @@ public record MoveRequestMessage : BaseNetworkMessage
     /// <summary>
     /// Тип хода
     /// </summary>
-    public MoveType MoveType { get; }
+    public MoveType MoveType { get; init; }
 
     /// <summary>
     /// С какой позиции
     /// </summary>
-    public Position From { get; }
+    public Position From { get; init; }
 
     /// <summary>
     /// На какую позицию
     /// </summary>
-    public Position To { get; }
+    public Position To { get; init; }
 
     /// <summary>
     /// Фигура продвижения
@@ -32,5 +32,5 @@ public record MoveRequestMessage : BaseNetworkMessage
     /// <remarks>
     /// null, если это не продвижение пешки
     /// </remarks>
-    public PieceType? PromotionPiece { get; }
+    public PieceType? PromotionPiece { get; init; }
 }

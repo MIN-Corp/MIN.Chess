@@ -5,6 +5,9 @@ using MIN.Chess.Logic.Enums;
 using MIN.Chess.Logic.Models;
 using MIN.Chess.Logic.Models.Coordination;
 using MIN.Chess.Logic.Models.Moves;
+using MIN.Chess.Messages;
+using MIN.Chess.Messages.Messages;
+using MIN.Ipc.Services.Contracts.Interfaces;
 
 namespace MIN.Chess.Client.Forms;
 
@@ -13,7 +16,12 @@ namespace MIN.Chess.Client.Forms;
 /// </summary>
 public partial class MainForm : Form
 {
+    private const int ConnectionTimeoutMs = 5_000;
+
+    private readonly IClientProcessBridge bridge;
+    private readonly CancellationTokenSource appCts;
     private readonly Dictionary<Position, Move> moveCache = [];
+
     private GameState gameState;
     private Position? selectedPos;
     private Rectangle[,] cellRectangles = null!;
@@ -23,8 +31,10 @@ public partial class MainForm : Form
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="MainForm"/>
     /// </summary>
-    public MainForm()
+    public MainForm(IClientProcessBridge bridge, CancellationTokenSource appCts, string connectionString)
     {
+        this.bridge = bridge;
+        this.appCts = appCts;
         gameState = new GameState(Board.Initial(), Player.White);
         InitializeComponent();
 
@@ -37,6 +47,33 @@ public partial class MainForm : Form
         mainPanel.BackgroundImageLayout = ImageLayout.Zoom;
 
         CalculateCellRectangles();
+
+        InitializeNetworking(connectionString);
+    }
+
+    private async void InitializeNetworking(string connectionString)
+    {
+        bridge.RegisterAllFromAnchor<IChessMessagesAnchor>();
+        await bridge.ConnectAsync(connectionString, ConnectionTimeoutMs, appCts.Token);
+
+        bridge.NetworkMessageReceived += NetworkMessageReceived;
+
+        await bridge.SendReadyMessage(appCts.Token);
+    }
+
+    private static async void NetworkMessageReceived(object? sender, INetworkMessage message)
+    {
+        await HandleMessage(message);
+    }
+
+    private static async Task HandleMessage(INetworkMessage message)
+    {
+        switch (message)
+        {
+            case MoveRequestMessage moveRequestMessage:
+                Console.WriteLine("moveRequestMessage received");
+                break;
+        }
     }
 
     /// <summary>
@@ -229,7 +266,7 @@ public partial class MainForm : Form
         mainPanel.Invalidate();
     }
 
-    private void HandleMove(Move move)
+    private async void HandleMove(Move move)
     {
         gameState.MakeMove(move);
 
@@ -237,6 +274,16 @@ public partial class MainForm : Form
 
         moveCache.Clear();
         mainPanel.Invalidate();
+
+        var message = new MoveRequestMessage()
+        {
+            MoveType = move.Type,
+            From = move.FromPos,
+            To = move.ToPos,
+            PromotionPiece = move is PawnPromotion pawnPromotion ? pawnPromotion.NewType : null
+        };
+
+        await bridge.SendMessage(message, msgType: message.Type, cancellationToken: appCts.Token);
 
         if (gameState.IsGameOver())
         {

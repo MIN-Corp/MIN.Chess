@@ -1,4 +1,5 @@
 ﻿using System.IO.Pipes;
+using System.Security.Principal;
 using System.Text.Json;
 using MIN.Ipc.Transport.Contracts.Enums;
 using MIN.Ipc.Transport.Contracts.Interfaces;
@@ -25,8 +26,15 @@ public sealed class NamedPipeProcessClientTransport : IProcessClientTransport
             throw new ArgumentException("Expected pipe transport");
         }
 
-        pipe = new NamedPipeClientStream(".", info.Value, PipeDirection.InOut);
+        if (!OperatingSystem.IsWindows())
+        {
+            throw new InvalidOperationException("Windows only");
+        }
+
+        pipe = new NamedPipeClientStream(".", info.Value, PipeDirection.InOut,
+            PipeOptions.Asynchronous, TokenImpersonationLevel.Impersonation);
         await pipe.ConnectAsync(5000, cancellationToken);
+        pipe.ReadMode = PipeTransmissionMode.Message;
         _ = ReadLoopAsync(cts.Token);
     }
 
@@ -38,7 +46,9 @@ public sealed class NamedPipeProcessClientTransport : IProcessClientTransport
             while (!cancellationToken.IsCancellationRequested)
             {
                 await pipe!.ReadExactlyAsync(lengthBuf, cancellationToken);
+
                 var length = BitConverter.ToInt32(lengthBuf);
+
                 var body = new byte[length];
                 await pipe.ReadExactlyAsync(body, cancellationToken);
 
@@ -48,8 +58,9 @@ public sealed class NamedPipeProcessClientTransport : IProcessClientTransport
                 });
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine($"ReadLoop error: {ex.Message}");
             return;
         }
     }

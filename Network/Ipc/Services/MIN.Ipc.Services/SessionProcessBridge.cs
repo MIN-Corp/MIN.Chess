@@ -100,6 +100,7 @@ public class ClientProcessBridge : IClientProcessBridge
 
         var json = JsonSerializer.Serialize(envelope);
         var data = Encoding.UTF8.GetBytes(json);
+
         await processTransport.SendAsync(data, cancellationToken);
     }
 

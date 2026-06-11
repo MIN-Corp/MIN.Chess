@@ -52,7 +52,7 @@ public sealed class NetworkMessageSerializerRegistry
         var tag = doc.RootElement.GetProperty("type").GetString()!;
         var data = doc.RootElement.GetProperty("data");
         return typeMap.TryGetValue(tag, out var t)
-            ? (tag, JsonSerializer.Deserialize(data, t))
-            : (tag, null);
+            ? JsonSerializer.Deserialize(data, t)
+            : null;
     }
 }
