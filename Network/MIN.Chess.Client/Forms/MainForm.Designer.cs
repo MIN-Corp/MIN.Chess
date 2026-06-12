@@ -47,8 +47,10 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanel.Location = new Point(0, 0);
             tableLayoutPanel.Margin = new Padding(0);
             tableLayoutPanel.Name = "tableLayoutPanel";
-            tableLayoutPanel.RowCount = 1;
+            tableLayoutPanel.RowCount = 3;
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
             tableLayoutPanel.Size = new Size(984, 579);
             tableLayoutPanel.TabIndex = 0;
             // 
@@ -59,6 +61,7 @@ namespace MIN.Chess.Client.Forms
             mainPanel.Location = new Point(200, 0);
             mainPanel.Margin = new Padding(0);
             mainPanel.Name = "mainPanel";
+            tableLayoutPanel.SetRowSpan(mainPanel, 3);
             mainPanel.Size = new Size(584, 579);
             mainPanel.TabIndex = 0;
             // 

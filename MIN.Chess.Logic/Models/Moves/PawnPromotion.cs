@@ -1,4 +1,5 @@
 ﻿using MIN.Chess.Logic.Enums;
+using MIN.Chess.Logic.Extensions;
 using MIN.Chess.Logic.Models.Coordination;
 using MIN.Chess.Logic.Models.Pieces;
 
@@ -39,6 +40,9 @@ public class PawnPromotion : Move
             PieceType.Rook => new Rook(color),
             _ => new Queen(color)
         };
+
+    /// <inheritdoc />
+    public override string ToUci() => FromPos.ToUci() + ToPos.ToUci() + NewType.ToUciChar();
 
     /// <inheritdoc />
     public override bool Execute(Board board)

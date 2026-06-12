@@ -1,5 +1,4 @@
 ﻿using MIN.Chess.Logic.Enums;
-using MIN.Chess.Logic.Models;
 using MIN.Chess.Messages.Contracts.Enums;
 using MIN.Chess.Messages.Contracts.Models;
 
@@ -12,12 +11,12 @@ public record StateUpdateMessage : BaseNetworkMessage
     public override NetworkMessageType MessageType => NetworkMessageType.StateUpdate;
 
     /// <summary>
-    /// Доска с фигурами
+    /// Состояние игры в виде строки
     /// </summary>
-    public Board Board { get; } = null!;
+    public string StateString { get; init; } = string.Empty;
 
     /// <summary>
-    /// Текущий ход
+    /// Текущий ход игрока
     /// </summary>
-    public Player CurrentPlayer { get; }
+    public Player CurrentPlayer { get; init; }
 }

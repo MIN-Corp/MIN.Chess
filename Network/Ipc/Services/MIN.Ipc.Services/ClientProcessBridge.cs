@@ -38,11 +38,17 @@ public class ClientProcessBridge : IClientProcessBridge
 
     private async void OnTransportMessage(object? sender, ProcessClientTransportMessageEventArgs e)
     {
-        var message = ipcSerializer.Deserialize(e.Data);
-        HandleIpcMessage(message);
+        var envelope = JsonSerializer.Deserialize<IpcMinMessageEnvelope>(e.Data);
+        if (envelope == null)
+        {
+            return;
+        }
+
+        var message = ipcSerializer.Deserialize(envelope.Body);
+        HandleIpcMessage(message, envelope.SenderId);
     }
 
-    private void HandleIpcMessage(IpcMessage message)
+    private void HandleIpcMessage(IpcMessage message, Guid senderId)
     {
         switch (message)
         {
@@ -62,7 +68,10 @@ public class ClientProcessBridge : IClientProcessBridge
                 var json = registry.Deserialize(inSessionMessage.Body)
                     ?? throw new ArgumentException($"Не удалось распарсить сообщение: {inSessionMessage.Body}");
 
-                NetworkMessageReceived?.Invoke(this, (INetworkMessage)json);
+                var networkMessage = (INetworkMessage)json;
+                networkMessage.SenderId = senderId.ToString();
+
+                NetworkMessageReceived?.Invoke(this, networkMessage);
                 break;
 
             default:
@@ -92,7 +101,7 @@ public class ClientProcessBridge : IClientProcessBridge
     private async Task SendIpcMessage(IpcMessage message, Guid? RecipientId, CancellationToken cancellationToken)
     {
         var messageData = ipcSerializer.Serialize(message);
-        var envelope = new IpcMessageEnvelope()
+        var envelope = new IpcProcessMessageEnvelope()
         {
             Body = messageData,
             RecipientId = RecipientId,
@@ -106,7 +115,7 @@ public class ClientProcessBridge : IClientProcessBridge
 
     async Task IClientProcessBridge.SendReadyMessage(CancellationToken cancellationToken)
     {
-        await SendIpcMessage(new ReadyMessage(), RecipientId: null, cancellationToken);
+        await SendIpcMessage(new ReadyMessage(), null, cancellationToken);
     }
 
     async Task IClientProcessBridge.SendMessage<T>(T message, Guid? RecipientId, string? msgType, CancellationToken cancellationToken)

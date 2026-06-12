@@ -21,32 +21,37 @@ public enum NetworkMessageType : byte
     RestartRequest = 2,
 
     /// <summary>
+    /// Запрос на обновление с сервера
+    /// </summary>
+    StateUpdateRequest = 3,
+
+    /// <summary>
     /// Обновление с сервера
     /// </summary>
-    StateUpdate = 3,
+    StateUpdate = 4,
 
     /// <summary>
     /// Результат игры
     /// </summary>
-    GameResult = 4,
+    GameResult = 5,
 
     /// <summary>
     /// Ошибка
     /// </summary>
-    Error = 5,
+    Error = 6,
 
     /// <summary>
     /// Присоединение оппонента
     /// </summary>
-    OpponentConnected = 6,
+    OpponentConnected = 7,
 
     /// <summary>
     /// Отсоединения оппонента
     /// </summary>
-    OpponentDisconnected = 7,
+    OpponentDisconnected = 8,
 
     /// <summary>
-    /// Начало игры
+    /// Ход с сервера
     /// </summary>
-    GameStart = 8,
+    MoveUpdate = 9,
 }

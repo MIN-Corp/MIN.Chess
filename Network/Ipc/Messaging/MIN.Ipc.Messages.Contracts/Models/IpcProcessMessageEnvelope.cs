@@ -1,9 +1,9 @@
 ﻿namespace MIN.Ipc.Messages.Contracts.Models;
 
 /// <summary>
-/// Обёртка над между-процессорными сообщениями
+/// Обёртка над между-процессорными сообщениями, поставляемые приложением в MIN
 /// </summary>
-public class IpcMessageEnvelope
+public class IpcProcessMessageEnvelope
 {
     /// <summary>
     /// Получатель сообщения внутри подкомнаты

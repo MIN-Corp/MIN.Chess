@@ -17,14 +17,12 @@ public partial class GameOverMenu : Form
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="GameOverMenu"/>
     /// </summary>
-    public GameOverMenu(GameState gameState)
+    public GameOverMenu(Result result, Player currentPlayer)
     {
         InitializeComponent();
 
-        var result = gameState.Result!.Value;
-
         outcomeTitle.Text = GetWinnerText(result.Winner);
-        reason.Text = GetReasonText(result.Reason, gameState.CurrentPlayer);
+        reason.Text = GetReasonText(result.Reason, currentPlayer);
     }
 
     private static string GetWinnerText(Player player)

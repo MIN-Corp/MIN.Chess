@@ -238,6 +238,7 @@ public partial class MainForm : Form
         moveCache.Clear();
         mainPanel.Invalidate();
 
+        gameState.CheckForGameOver();
         if (gameState.IsGameOver())
         {
             ShowGameOver();

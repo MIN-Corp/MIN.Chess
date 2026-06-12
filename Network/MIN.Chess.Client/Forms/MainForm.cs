@@ -5,6 +5,7 @@ using MIN.Chess.Logic.Enums;
 using MIN.Chess.Logic.Models;
 using MIN.Chess.Logic.Models.Coordination;
 using MIN.Chess.Logic.Models.Moves;
+using MIN.Chess.Logic.Services;
 using MIN.Chess.Messages;
 using MIN.Chess.Messages.Messages;
 using MIN.Ipc.Services.Contracts.Interfaces;
@@ -22,11 +23,12 @@ public partial class MainForm : Form
     private readonly CancellationTokenSource appCts;
     private readonly Dictionary<Position, Move> moveCache = [];
 
-    private GameState gameState;
+    private GameState? gameState;
     private Position? selectedPos;
     private Rectangle[,] cellRectangles = null!;
     private Move? pendingPromotionMove;
     private Move? lastMove;
+    private string? lastMoveUci;
 
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="MainForm"/>
@@ -35,19 +37,12 @@ public partial class MainForm : Form
     {
         this.bridge = bridge;
         this.appCts = appCts;
-        gameState = new GameState(Board.Initial(), Player.White);
         InitializeComponent();
-
-        // Настройка панели для рисования
-        mainPanel.Paint += MainPanel_Paint;
-        mainPanel.MouseClick += MainPanel_MouseClick;
-        mainPanel.Resize += (_, _) => CalculateCellRectangles();
 
         mainPanel.BackgroundImage = Properties.Resources.Board;
         mainPanel.BackgroundImageLayout = ImageLayout.Zoom;
 
         CalculateCellRectangles();
-
         InitializeNetworking(connectionString);
     }
 
@@ -58,20 +53,66 @@ public partial class MainForm : Form
 
         bridge.NetworkMessageReceived += NetworkMessageReceived;
 
+        await bridge.StartListeningAsync(appCts.Token);
+
         await bridge.SendReadyMessage(appCts.Token);
+
+        await bridge.SendMessage(new StateUpdateRequestMessage(), cancellationToken: appCts.Token);
     }
 
-    private static async void NetworkMessageReceived(object? sender, INetworkMessage message)
+    private async void NetworkMessageReceived(object? sender, INetworkMessage message)
     {
         await HandleMessage(message);
     }
 
-    private static async Task HandleMessage(INetworkMessage message)
+    private async Task HandleMessage(INetworkMessage message)
     {
         switch (message)
         {
-            case MoveRequestMessage moveRequestMessage:
-                Console.WriteLine("moveRequestMessage received");
+            case StateUpdateMessage stateUpdateMessage:
+                var firstUpdate = gameState == null;
+
+                gameState = new GameState(Board.FromStateString(stateUpdateMessage.StateString), stateUpdateMessage.CurrentPlayer);
+
+                if (firstUpdate)
+                {
+                    mainPanel.Paint += MainPanel_Paint;
+                    mainPanel.MouseClick += MainPanel_MouseClick;
+                    mainPanel.Resize += (_, _) => CalculateCellRectangles();
+                }
+
+                moveCache.Clear();
+                mainPanel.Invalidate();
+                break;
+
+            case MoveUpdateMessage moveUpdateMessage:
+                if (gameState == null)
+                {
+                    await bridge.SendMessage(new StateUpdateRequestMessage(), cancellationToken: appCts.Token);
+                    return;
+                }
+
+                if (lastMoveUci == moveUpdateMessage.MoveUci)
+                {
+                    return;
+                }
+
+                var move = MoveParser.Parse(moveUpdateMessage.MoveUci, gameState.Board);
+
+                gameState.MakeMove(move);
+                lastMove = move;
+                moveCache.Clear();
+                mainPanel.Invalidate();
+                break;
+
+            case GameResultMessage gameResultMessage:
+                if (gameState == null)
+                {
+                    await bridge.SendMessage(new StateUpdateRequestMessage(), cancellationToken: appCts.Token);
+                    return;
+                }
+
+                ShowGameOver(gameResultMessage.Result, gameState.CurrentPlayer);
                 break;
         }
     }
@@ -134,7 +175,12 @@ public partial class MainForm : Form
         g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
         g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
 
-        Board board = gameState.Board;
+        if (gameState == null)
+        {
+            return;
+        }
+
+        var board = gameState.Board;
         for (var row = 0; row < 8; row++)
         {
             for (var col = 0; col < 8; col++)
@@ -232,6 +278,11 @@ public partial class MainForm : Form
 
     private void OnFromPositionSelected(Position position)
     {
+        if (gameState == null)
+        {
+            return;
+        }
+
         var moves = gameState.LegalMovesForPiece(position);
         if (moves.Any())
         {
@@ -268,6 +319,11 @@ public partial class MainForm : Form
 
     private async void HandleMove(Move move)
     {
+        if (gameState == null)
+        {
+            return;
+        }
+
         gameState.MakeMove(move);
 
         lastMove = move;
@@ -275,24 +331,23 @@ public partial class MainForm : Form
         moveCache.Clear();
         mainPanel.Invalidate();
 
+        lastMoveUci = move.ToUci();
+
         var message = new MoveRequestMessage()
         {
-            MoveType = move.Type,
-            From = move.FromPos,
-            To = move.ToPos,
-            PromotionPiece = move is PawnPromotion pawnPromotion ? pawnPromotion.NewType : null
+            MoveUciNotation = lastMoveUci,
         };
 
-        await bridge.SendMessage(message, msgType: message.Type, cancellationToken: appCts.Token);
-
-        if (gameState.IsGameOver())
-        {
-            ShowGameOver();
-        }
+        await bridge.SendMessage(message, cancellationToken: appCts.Token);
     }
 
     private void HandlePromotion(Position from, Position to)
     {
+        if (gameState == null)
+        {
+            return;
+        }
+
         pendingPromotionMove = new NormalMove(from, to);
         mainPanel.Invalidate();
 
@@ -307,10 +362,14 @@ public partial class MainForm : Form
         promotionMenu.ShowDialog();
     }
 
-    private void ShowGameOver()
+    private void ShowGameOver(Result result, Player currentPlayer)
     {
-        var menu = new GameOverMenu(gameState);
+        if (gameState == null)
+        {
+            return;
+        }
 
+        var menu = new GameOverMenu(result, currentPlayer);
         menu.OnOptionSelected += option =>
         {
             if (option == Option.Restart)

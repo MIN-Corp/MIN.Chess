@@ -9,4 +9,9 @@ public interface INetworkMessage
     /// Тип сообщения
     /// </summary>
     string Type { get; }
+
+    /// <summary>
+    /// Идентификатор отправителя сообщения
+    /// </summary>
+    string SenderId { get; set; }
 }

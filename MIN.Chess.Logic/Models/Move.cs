@@ -31,10 +31,20 @@ public abstract class Move
     public abstract bool Execute(Board board);
 
     /// <summary>
+    /// Перевести ход в нотацию
+    /// </summary>
+    public virtual string ToUci() => FromPos.ToUci() + ToPos.ToUci();
+
+    /// <summary>
     /// Доступен ли ход (не будет ли король под угрозой после хода)
     /// </summary>
     public virtual bool IsLegal(Board board)
     {
+        if (board[FromPos] == null)
+        {
+            return false;
+        }
+
         var player = board[FromPos]?.Color;
         var boardCopy = board.Copy();
         Execute(boardCopy);

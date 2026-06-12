@@ -12,5 +12,5 @@ public record ErrorMessage : BaseNetworkMessage
     /// <summary>
     /// Сообщение об ошибке
     /// </summary>
-    public string Message { get; } = "Произошла ошибка";
+    public string Message { get; init; } = "Произошла ошибка";
 }

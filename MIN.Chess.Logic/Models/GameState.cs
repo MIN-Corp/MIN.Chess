@@ -17,12 +17,12 @@ public class GameState
     /// <summary>
     /// Доска с фигурами
     /// </summary>
-    public Board Board { get; }
+    public Board Board { get; set; }
 
     /// <summary>
     /// Текущий ход
     /// </summary>
-    public Player CurrentPlayer { get; private set; }
+    public Player CurrentPlayer { get; set; }
 
     /// <summary>
     /// Результат игры
@@ -37,9 +37,14 @@ public class GameState
         Board = board;
         CurrentPlayer = currentPlayer;
 
-        stateString = new StateString(CurrentPlayer, board).ToString();
+        stateString = new StateString(CurrentPlayer, Board).ToString();
         stateHistory[stateString] = 1;
     }
+
+    /// <summary>
+    /// Превратить состояние игры в строку
+    /// </summary>
+    public override string ToString() => new StateString(CurrentPlayer, Board).ToString();
 
     /// <summary>
     /// Получить все доступные позиции для фигуры
@@ -77,7 +82,6 @@ public class GameState
         CurrentPlayer = CurrentPlayer.Opponent();
         UpdateStateString();
         cachedLegalMoves = GenerateAllLegalMoves(CurrentPlayer);
-        CheckForGameOver(cachedLegalMoves);
     }
 
     private IEnumerable<Move> GenerateAllLegalMoves(Player player)
@@ -107,9 +111,12 @@ public class GameState
     /// </summary>
     public bool FiftyMoveRule() => (noCapturesOrPawnMoves / 2) == 50;
 
-    private void CheckForGameOver(IEnumerable<Move> movesToCheck)
+    /// <summary>
+    /// Проверить на окончание игры
+    /// </summary>
+    public void CheckForGameOver()
     {
-        if (!movesToCheck.Any())
+        if (!cachedLegalMoves?.Any() == true)
         {
             if (Board.IsInCheck(CurrentPlayer))
             {

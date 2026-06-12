@@ -27,6 +27,16 @@ public readonly record struct Position
     }
 
     /// <summary>
+    /// Перевести позицию в нотацию
+    /// </summary>
+    public readonly string ToUci() => $"{(char)('a' + Column)}{8 - Row}";
+
+    /// <summary>
+    /// Получить позицию от нотации
+    /// </summary>
+    public static Position FromUci(string uci) => new(8 - (uci[1] - '0'), uci[0] - 'a');
+
+    /// <summary>
     /// Цвет клетки
     /// </summary>
     public Player SquareColor() => (Row + Column) % 2 == 0 ? Player.White : Player.Black;

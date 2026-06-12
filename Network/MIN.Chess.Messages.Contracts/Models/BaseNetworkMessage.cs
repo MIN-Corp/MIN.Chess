@@ -15,4 +15,7 @@ public abstract record BaseNetworkMessage : INetworkMessage
 
     /// <inheritdoc />
     public string Type => MessageType.ToString();
+
+    /// <inheritdoc />
+    public string SenderId { get; set; } = string.Empty;
 }

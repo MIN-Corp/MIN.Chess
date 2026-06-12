@@ -13,5 +13,5 @@ public record GameResultMessage : BaseNetworkMessage
     /// <summary>
     /// Результат игры
     /// </summary>
-    public Result Result { get; }
+    public Result Result { get; init; }
 }

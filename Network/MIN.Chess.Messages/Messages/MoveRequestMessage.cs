@@ -1,6 +1,4 @@
-﻿using MIN.Chess.Logic.Enums;
-using MIN.Chess.Logic.Models.Coordination;
-using MIN.Chess.Messages.Contracts.Enums;
+﻿using MIN.Chess.Messages.Contracts.Enums;
 using MIN.Chess.Messages.Contracts.Models;
 
 namespace MIN.Chess.Messages.Messages;
@@ -12,25 +10,7 @@ public record MoveRequestMessage : BaseNetworkMessage
     public override NetworkMessageType MessageType => NetworkMessageType.MoveRequest;
 
     /// <summary>
-    /// Тип хода
+    /// Ход в виде нотации
     /// </summary>
-    public MoveType MoveType { get; init; }
-
-    /// <summary>
-    /// С какой позиции
-    /// </summary>
-    public Position From { get; init; }
-
-    /// <summary>
-    /// На какую позицию
-    /// </summary>
-    public Position To { get; init; }
-
-    /// <summary>
-    /// Фигура продвижения
-    /// </summary>
-    /// <remarks>
-    /// null, если это не продвижение пешки
-    /// </remarks>
-    public PieceType? PromotionPiece { get; init; }
+    public string MoveUciNotation { get; init; } = string.Empty;
 }

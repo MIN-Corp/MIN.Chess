@@ -5,17 +5,17 @@ namespace MIN.Chess.Logic.Models;
 /// <summary>
 /// Результат игры
 /// </summary>
-public readonly record struct Result
+public record struct Result
 {
     /// <summary>
     /// Победивший игрок
     /// </summary>
-    public Player Winner { get; }
+    public Player Winner { get; set; }
 
     /// <summary>
     /// Причина окончания игры
     /// </summary>
-    public EndReason Reason { get; }
+    public EndReason Reason { get; set; }
 
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="Result"/>
