@@ -32,7 +32,11 @@ namespace MIN.Chess.Client.Forms
         {
             var resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             tableLayoutPanel = new TableLayoutPanel();
+            opponentName = new MIN.Chess.Client.Components.Labels.Heading3Label();
             mainPanel = new DoubleBufferedPanel();
+            selfRoleName = new MIN.Chess.Client.Components.Labels.Heading3Label();
+            spectatorsCounter = new MIN.Chess.Client.Components.Labels.Heading1Label();
+            listBox1 = new ListBox();
             tableLayoutPanel.SuspendLayout();
             SuspendLayout();
             // 
@@ -42,7 +46,11 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200F));
+            tableLayoutPanel.Controls.Add(opponentName, 0, 0);
             tableLayoutPanel.Controls.Add(mainPanel, 1, 0);
+            tableLayoutPanel.Controls.Add(selfRoleName, 0, 2);
+            tableLayoutPanel.Controls.Add(spectatorsCounter, 2, 0);
+            tableLayoutPanel.Controls.Add(listBox1, 2, 1);
             tableLayoutPanel.Dock = DockStyle.Fill;
             tableLayoutPanel.Location = new Point(0, 0);
             tableLayoutPanel.Margin = new Padding(0);
@@ -54,6 +62,17 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanel.Size = new Size(984, 579);
             tableLayoutPanel.TabIndex = 0;
             // 
+            // opponentName
+            // 
+            opponentName.AutoSize = true;
+            opponentName.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            opponentName.ForeColor = Color.White;
+            opponentName.Location = new Point(3, 0);
+            opponentName.Name = "opponentName";
+            opponentName.Size = new Size(104, 21);
+            opponentName.TabIndex = 2;
+            opponentName.Text = "Загрузка . . .";
+            // 
             // mainPanel
             // 
             mainPanel.BackgroundImageLayout = ImageLayout.Zoom;
@@ -64,6 +83,39 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanel.SetRowSpan(mainPanel, 3);
             mainPanel.Size = new Size(584, 579);
             mainPanel.TabIndex = 0;
+            // 
+            // selfRoleName
+            // 
+            selfRoleName.AutoSize = true;
+            selfRoleName.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            selfRoleName.ForeColor = Color.White;
+            selfRoleName.Location = new Point(3, 531);
+            selfRoleName.Name = "selfRoleName";
+            selfRoleName.Size = new Size(104, 21);
+            selfRoleName.TabIndex = 1;
+            selfRoleName.Text = "Загрузка . . .";
+            // 
+            // spectatorsCounter
+            // 
+            spectatorsCounter.Dock = DockStyle.Left;
+            spectatorsCounter.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            spectatorsCounter.ForeColor = Color.White;
+            spectatorsCounter.Location = new Point(787, 0);
+            spectatorsCounter.Name = "spectatorsCounter";
+            spectatorsCounter.Size = new Size(32, 48);
+            spectatorsCounter.TabIndex = 4;
+            spectatorsCounter.Text = "0";
+            spectatorsCounter.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // listBox1
+            // 
+            listBox1.Dock = DockStyle.Fill;
+            listBox1.FormattingEnabled = true;
+            listBox1.ItemHeight = 15;
+            listBox1.Location = new Point(787, 51);
+            listBox1.Name = "listBox1";
+            listBox1.Size = new Size(194, 477);
+            listBox1.TabIndex = 5;
             // 
             // MainForm
             // 
@@ -82,6 +134,7 @@ namespace MIN.Chess.Client.Forms
             KeyDown += MainForm_KeyDown;
             Resize += MainForm_Resize;
             tableLayoutPanel.ResumeLayout(false);
+            tableLayoutPanel.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -89,5 +142,9 @@ namespace MIN.Chess.Client.Forms
 
         private TableLayoutPanel tableLayoutPanel;
         private DoubleBufferedPanel mainPanel;
+        private Components.Labels.Heading3Label opponentName;
+        private Components.Labels.Heading3Label selfRoleName;
+        private Components.Labels.Heading1Label spectatorsCounter;
+        private ListBox listBox1;
     }
 }

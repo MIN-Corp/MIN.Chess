@@ -195,7 +195,7 @@ public partial class MainForm : Form
 
     private void OnFromPositionSelected(Position position)
     {
-        var moves = gameState.LegalMovesForPiece(position);
+        var moves = gameState.LegalMovesForPiece(position, Player.White);
         if (moves.Any())
         {
             selectedPos = position;

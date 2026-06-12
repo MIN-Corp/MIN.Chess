@@ -41,17 +41,27 @@ public enum NetworkMessageType : byte
     Error = 6,
 
     /// <summary>
-    /// Присоединение оппонента
+    /// Присоединение игрока
     /// </summary>
-    OpponentConnected = 7,
+    PlayerConnected = 7,
 
     /// <summary>
-    /// Отсоединения оппонента
+    /// Отсоединения игрока
     /// </summary>
-    OpponentDisconnected = 8,
+    PlayerDisconnected = 8,
 
     /// <summary>
     /// Ход с сервера
     /// </summary>
     MoveUpdate = 9,
+
+    /// <summary>
+    /// Запрос на первоначальные данные от сервера
+    /// </summary>
+    InitRequest = 10,
+
+    /// <summary>
+    /// Первоначальные данные от сервера
+    /// </summary>
+    InitResponse = 11,
 }

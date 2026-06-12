@@ -18,5 +18,10 @@ public record StateUpdateMessage : BaseNetworkMessage
     /// <summary>
     /// Текущий ход игрока
     /// </summary>
-    public Player CurrentPlayer { get; init; }
+    public Player CurrentTurn { get; init; }
+
+    /// <summary>
+    /// Последний ход (если был)
+    /// </summary>
+    public string? LastMove { get; init; }
 }

@@ -49,9 +49,14 @@ public class GameState
     /// <summary>
     /// Получить все доступные позиции для фигуры
     /// </summary>
-    public IEnumerable<Move> LegalMovesForPiece(Position position)
+    public IEnumerable<Move> LegalMovesForPiece(Position position, Player? role = null)
     {
         if (Board.IsEmpty(position) || Board[position]?.Color != CurrentPlayer)
+        {
+            return [];
+        }
+
+        if (role != null && role != CurrentPlayer)
         {
             return [];
         }

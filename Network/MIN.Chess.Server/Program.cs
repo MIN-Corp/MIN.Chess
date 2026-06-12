@@ -24,6 +24,8 @@ static internal class Program
 
     private const int ConnectionTimeoutMs = 5_000;
 
+    private static Move? lastMove = null;
+
     /// <summary>
     /// The main entry point for the application.
     /// </summary>
@@ -82,56 +84,119 @@ static internal class Program
     {
         switch (message)
         {
+            case InitRequestMessage _:
+                await HandleInit(message);
+                break;
+
             case StateUpdateRequestMessage _:
-                Console.WriteLine("StateUpdateRequestMessage received");
-                Console.WriteLine($"sending gamestate {gameState.ToString()}");
-                await bridge.SendMessage(new StateUpdateMessage()
-                {
-                    StateString = gameState.ToString(),
-                    CurrentPlayer = gameState.CurrentPlayer,
-                }, RecipientId: Guid.Parse(message.SenderId), cancellationToken: appCts.Token);
+                await StateUpdate(message);
                 break;
 
             case MoveRequestMessage moveRequestMessage:
-                Console.WriteLine($"moveRequestMessage received {moveRequestMessage.MoveUciNotation}");
-
-                var move = MoveParser.Parse(moveRequestMessage.MoveUciNotation, gameState.Board);
-
-                Console.WriteLine("checking legalability . . .");
-
-                if (move.IsLegal(gameState.Board))
-                {
-                    gameState.MakeMove(move);
-                }
-                else
-                {
-                    await bridge.SendMessage(new ErrorMessage()
-                    {
-                        Message = $"Нелегальный ход",
-                    }, RecipientId: Guid.Parse(message.SenderId), cancellationToken: appCts.Token);
-                    return;
-                }
-
-                Console.WriteLine("move is legal, sending move update");
-
-                await bridge.SendMessage(new MoveUpdateMessage()
-                {
-                    MoveUci = moveRequestMessage.MoveUciNotation,
-                    CurrentPlayer = gameState.CurrentPlayer,
-                }, cancellationToken: appCts.Token);
-
-                gameState.CheckForGameOver();
-
-                if (gameState.IsGameOver())
-                {
-                    Console.WriteLine($"game over, sending result: {JsonSerializer.Serialize(gameState.Result!.Value)}");
-                    await bridge.SendMessage(new GameResultMessage()
-                    {
-                        Result = gameState.Result!.Value,
-                    }, cancellationToken: appCts.Token);
-                    return;
-                }
+                await HandleMove(moveRequestMessage);
                 break;
+        }
+    }
+
+    private static async Task HandleInit(INetworkMessage message)
+    {
+        Console.WriteLine("InitRequestMessage received");
+        Console.WriteLine($"sending init {gameState.ToString()}");
+
+        var senderId = Guid.Parse(message.SenderId);
+        var role = ResolveRole(senderId);
+
+        Console.WriteLine($"ROLE {role.ToString()}");
+
+        Participant? sender;
+
+        players.TryGetValue(role, out sender);
+
+        if (sender == null)
+        {
+            spectators.TryGetValue(senderId, out sender);
+        }
+
+        await bridge.SendMessage(new InitResponseMessage()
+        {
+            StateString = gameState.ToString(),
+            CurrentTurn = gameState.CurrentPlayer,
+            ActivePlayers = players,
+            SpectorsCount = spectators.Count,
+            SelfParticipant = sender!,
+            RequesterRole = role,
+            LastMove = lastMove?.ToUci(),
+        }, RecipientId: senderId, cancellationToken: appCts.Token);
+    }
+
+    private static async Task StateUpdate(INetworkMessage message)
+    {
+        Console.WriteLine("StateUpdateRequestMessage received");
+        Console.WriteLine($"sending gamestate {gameState.ToString()}");
+        await bridge.SendMessage(new StateUpdateMessage()
+        {
+            StateString = gameState.ToString(),
+            CurrentTurn = gameState.CurrentPlayer,
+            LastMove = lastMove?.ToUci(),
+        }, RecipientId: Guid.Parse(message.SenderId), cancellationToken: appCts.Token);
+    }
+
+    private static async Task HandleMove(MoveRequestMessage moveRequestMessage)
+    {
+        Console.WriteLine($"moveRequestMessage received {moveRequestMessage.MoveUciNotation}");
+
+        var move = MoveParser.Parse(moveRequestMessage.MoveUciNotation, gameState.Board);
+
+        Console.WriteLine("checking legalability . . .");
+
+        if (move.IsLegal(gameState.Board))
+        {
+            gameState.MakeMove(move);
+            lastMove = move;
+        }
+        else
+        {
+            await bridge.SendMessage(new ErrorMessage()
+            {
+                Message = $"Нелегальный ход",
+            }, RecipientId: Guid.Parse(moveRequestMessage.SenderId), cancellationToken: appCts.Token);
+            return;
+        }
+
+        Console.WriteLine("move is legal, sending move update");
+
+        await bridge.SendMessage(new MoveUpdateMessage()
+        {
+            MoveUci = moveRequestMessage.MoveUciNotation,
+            CurrentPlayer = gameState.CurrentPlayer,
+        }, cancellationToken: appCts.Token);
+
+        gameState.CheckForGameOver();
+
+        if (gameState.IsGameOver())
+        {
+            Console.WriteLine($"game over, sending result: {JsonSerializer.Serialize(gameState.Result!.Value)}");
+            await bridge.SendMessage(new GameResultMessage()
+            {
+                Result = gameState.Result!.Value,
+            }, cancellationToken: appCts.Token);
+            return;
+        }
+    }
+
+    private static Player ResolveRole(Guid senderId)
+    {
+        if (players[Player.White]?.Id == senderId || players[Player.White] == null)
+        {
+            return Player.White;
+        }
+        else if (players[Player.Black]?.Id == senderId || players[Player.Black] == null)
+        {
+            return Player.Black;
+        }
+        else
+        {
+            return Player.None;
         }
     }
 
@@ -141,15 +206,37 @@ static internal class Program
         {
             Console.WriteLine($"{participant.Name} joined as Spectator");
             spectators[participant.Id] = participant;
+
+            await bridge.SendMessage(new PlayerConnectedMessage()
+            {
+                Role = Player.None,
+                Participant = participant,
+            }, cancellationToken: appCts.Token);
+
             return;
         }
+
+        lastMove = null;
 
         if (players[Player.White] == null)
         {
             Console.WriteLine($"{participant.Name} joined as White");
             players[Player.White] = participant;
 
-            gameState.Board = Board.Initial(Player.White);
+            gameState.Board = players[Player.Black] == null
+                ? Board.Initial(Player.White)
+                : Board.Initial();
+
+            if (players[Player.Black] != null)
+            {
+                gameState.CurrentPlayer = Player.White;
+            }
+
+            await bridge.SendMessage(new PlayerConnectedMessage()
+            {
+                Role = Player.White,
+                Participant = participant,
+            }, cancellationToken: appCts.Token);
         }
         else if (players[Player.Black] == null)
         {
@@ -159,7 +246,21 @@ static internal class Program
             gameState.Board = Board.Initial();
             gameState.CurrentPlayer = Player.White;
 
-            await SendStateUpdate();
+            await bridge.SendMessage(new PlayerConnectedMessage()
+            {
+                Role = Player.Black,
+                Participant = participant,
+            }, cancellationToken: appCts.Token);
+        }
+
+        if (IsBothPlayersJoined())
+        {
+            await bridge.SendMessage(new StateUpdateMessage()
+            {
+                StateString = gameState.ToString(),
+                CurrentTurn = gameState.CurrentPlayer,
+                LastMove = null,
+            }, cancellationToken: appCts.Token);
         }
     }
 
@@ -168,6 +269,11 @@ static internal class Program
         if (spectators.ContainsKey(participantId))
         {
             spectators.Remove(participantId);
+
+            await bridge.SendMessage(new PlayerDisconnectedMessage()
+            {
+                Role = Player.None,
+            }, cancellationToken: appCts.Token);
             return;
         }
 
@@ -177,23 +283,22 @@ static internal class Program
         {
             Console.WriteLine($"White disconnected");
             players[Player.White] = null;
+
+            await bridge.SendMessage(new PlayerDisconnectedMessage()
+            {
+                Role = Player.White,
+            }, cancellationToken: appCts.Token);
         }
         else if (players[Player.Black]?.Id == participantId)
         {
             Console.WriteLine($"Black disconnected");
             players[Player.Black] = null;
+
+            await bridge.SendMessage(new PlayerDisconnectedMessage()
+            {
+                Role = Player.Black,
+            }, cancellationToken: appCts.Token);
         }
-
-        await SendStateUpdate();
-    }
-
-    private static async Task SendStateUpdate()
-    {
-        await bridge.SendMessage(new StateUpdateMessage()
-        {
-            StateString = gameState.ToString(),
-            CurrentPlayer = gameState.CurrentPlayer,
-        }, cancellationToken: appCts.Token);
     }
 
     private static bool IsBothPlayersJoined()

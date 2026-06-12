@@ -2,6 +2,7 @@ using MIN.Chess.Client.Contracts.Enums;
 using MIN.Chess.Client.Forms.HelperForms;
 using MIN.Chess.Client.Services;
 using MIN.Chess.Logic.Enums;
+using MIN.Chess.Logic.Extensions;
 using MIN.Chess.Logic.Models;
 using MIN.Chess.Logic.Models.Coordination;
 using MIN.Chess.Logic.Models.Moves;
@@ -9,6 +10,7 @@ using MIN.Chess.Logic.Services;
 using MIN.Chess.Messages;
 using MIN.Chess.Messages.Messages;
 using MIN.Ipc.Services.Contracts.Interfaces;
+using MIN.Ipc.Services.Contracts.Models;
 
 namespace MIN.Chess.Client.Forms;
 
@@ -22,6 +24,9 @@ public partial class MainForm : Form
     private readonly IClientProcessBridge bridge;
     private readonly CancellationTokenSource appCts;
     private readonly Dictionary<Position, Move> moveCache = [];
+    private Dictionary<Player, Participant?> players = [];
+
+    private Player? role;
 
     private GameState? gameState;
     private Position? selectedPos;
@@ -29,6 +34,7 @@ public partial class MainForm : Form
     private Move? pendingPromotionMove;
     private Move? lastMove;
     private string? lastMoveUci;
+    private int spectatorsCount;
 
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="MainForm"/>
@@ -57,7 +63,7 @@ public partial class MainForm : Form
 
         await bridge.SendReadyMessage(appCts.Token);
 
-        await bridge.SendMessage(new StateUpdateRequestMessage(), cancellationToken: appCts.Token);
+        await bridge.SendMessage(new InitRequestMessage(), cancellationToken: appCts.Token);
     }
 
     private async void NetworkMessageReceived(object? sender, INetworkMessage message)
@@ -67,12 +73,19 @@ public partial class MainForm : Form
 
     private async Task HandleMessage(INetworkMessage message)
     {
+        listBox1.Items.Add(message.GetType().ToString().Split('.').Last());
+
+        if (gameState == null && (message is not InitResponseMessage))
+        {
+            return;
+        }
+
         switch (message)
         {
-            case StateUpdateMessage stateUpdateMessage:
+            case InitResponseMessage initResponseMessage:
                 var firstUpdate = gameState == null;
 
-                gameState = new GameState(Board.FromStateString(stateUpdateMessage.StateString), stateUpdateMessage.CurrentPlayer);
+                gameState = new GameState(Board.FromStateString(initResponseMessage.StateString), initResponseMessage.CurrentTurn);
 
                 if (firstUpdate)
                 {
@@ -81,23 +94,42 @@ public partial class MainForm : Form
                     mainPanel.Resize += (_, _) => CalculateCellRectangles();
                 }
 
+                lastMove = initResponseMessage.LastMove != null
+                    ? MoveParser.Parse(initResponseMessage.LastMove, gameState.Board)
+                    : null;
+
+                role = initResponseMessage.RequesterRole;
+
+                players = initResponseMessage.ActivePlayers.ToDictionary();
+                spectatorsCount = initResponseMessage.SpectorsCount;
+
+                UpdatePlayersInfo();
+
+                CalculateCellRectangles();
+
+                moveCache.Clear();
+                mainPanel.Invalidate();
+                break;
+
+            case StateUpdateMessage stateUpdateMessage:
+                gameState!.Board = Board.FromStateString(stateUpdateMessage.StateString);
+                gameState.CurrentPlayer = stateUpdateMessage.CurrentTurn;
+
+                lastMove = stateUpdateMessage.LastMove != null
+                    ? MoveParser.Parse(stateUpdateMessage.LastMove, gameState.Board)
+                    : null;
+
                 moveCache.Clear();
                 mainPanel.Invalidate();
                 break;
 
             case MoveUpdateMessage moveUpdateMessage:
-                if (gameState == null)
-                {
-                    await bridge.SendMessage(new StateUpdateRequestMessage(), cancellationToken: appCts.Token);
-                    return;
-                }
-
                 if (lastMoveUci == moveUpdateMessage.MoveUci)
                 {
                     return;
                 }
 
-                var move = MoveParser.Parse(moveUpdateMessage.MoveUci, gameState.Board);
+                var move = MoveParser.Parse(moveUpdateMessage.MoveUci, gameState!.Board);
 
                 gameState.MakeMove(move);
                 lastMove = move;
@@ -106,14 +138,59 @@ public partial class MainForm : Form
                 break;
 
             case GameResultMessage gameResultMessage:
-                if (gameState == null)
-                {
-                    await bridge.SendMessage(new StateUpdateRequestMessage(), cancellationToken: appCts.Token);
-                    return;
-                }
-
-                ShowGameOver(gameResultMessage.Result, gameState.CurrentPlayer);
+                ShowGameOver(gameResultMessage.Result, gameState!.CurrentPlayer);
                 break;
+
+            case PlayerConnectedMessage playerConnectedMessage:
+                if (role != Player.None)
+                {
+                    players[playerConnectedMessage.Role] = playerConnectedMessage.Participant;
+                }
+                else
+                {
+                    spectatorsCount++;
+                }
+                UpdatePlayersInfo();
+                break;
+
+            case PlayerDisconnectedMessage playerDisconnectedMessage:
+                if (role != Player.None)
+                {
+                    players.Remove(playerDisconnectedMessage.Role);
+                }
+                else
+                {
+                    spectatorsCount--;
+                }
+                UpdatePlayersInfo();
+                break;
+        }
+    }
+
+    private void UpdatePlayersInfo()
+    {
+        var resultRole = role!.Value;
+
+        if (role!.Value == Player.None)
+        {
+            resultRole = Player.White;
+        }
+
+        players.TryGetValue(resultRole, out var player1);
+
+        selfRoleName.Text = player1?.Name;
+
+        players.TryGetValue(resultRole.Opponent(), out var player2);
+
+        opponentName.Text = player2 != null
+            ? player2.Name
+            : "Ожидаем оппонента . . .";
+
+        spectatorsCounter.Visible = spectatorsCount > 0;
+
+        if (spectatorsCount > 0)
+        {
+            spectatorsCounter.Text = spectatorsCount.ToString();
         }
     }
 
@@ -156,7 +233,9 @@ public partial class MainForm : Form
             {
                 var x = offsetX + col * cellSize;
                 var y = offsetY + row * cellSize;
-                cellRectangles[row, col] = new Rectangle(x, y, cellSize, cellSize);
+                var r = role == Player.Black ? 7 - row : row;
+                var c = role == Player.Black ? 7 - col : col;
+                cellRectangles[r, c] = new Rectangle(x, y, cellSize, cellSize);
             }
         }
     }
@@ -283,7 +362,7 @@ public partial class MainForm : Form
             return;
         }
 
-        var moves = gameState.LegalMovesForPiece(position);
+        var moves = gameState.LegalMovesForPiece(position, role);
         if (moves.Any())
         {
             selectedPos = position;
