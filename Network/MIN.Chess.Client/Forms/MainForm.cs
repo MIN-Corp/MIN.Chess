@@ -26,6 +26,16 @@ public partial class MainForm : Form
     private readonly Dictionary<Position, Move> moveCache = [];
     private Dictionary<Player, Participant?> players = [];
 
+    private readonly Dictionary<PieceType, int> startPieces = new()
+    {
+        [PieceType.Pawn] = 8,
+        [PieceType.Knight] = 2,
+        [PieceType.Bishop] = 2,
+        [PieceType.Rook] = 2,
+        [PieceType.Queen] = 1,
+        [PieceType.King] = 1,
+    };
+
     private Player? role;
 
     private GameState? gameState;
@@ -36,6 +46,8 @@ public partial class MainForm : Form
     private string? lastMoveUci;
     private int spectatorsCount;
 
+    private bool IsGameOn => lastMove != null;
+
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="MainForm"/>
     /// </summary>
@@ -44,6 +56,9 @@ public partial class MainForm : Form
         this.bridge = bridge;
         this.appCts = appCts;
         InitializeComponent();
+
+        resignButton.BackColor = Color.Black;
+        pauseButton.BackColor = Color.Black;
 
         mainPanel.BackgroundImage = Properties.Resources.Board;
         mainPanel.BackgroundImageLayout = ImageLayout.Zoom;
@@ -73,8 +88,6 @@ public partial class MainForm : Form
 
     private async Task HandleMessage(INetworkMessage message)
     {
-        listBox1.Items.Add(message.GetType().ToString().Split('.').Last());
-
         if (gameState == null && (message is not InitResponseMessage))
         {
             return;
@@ -115,6 +128,8 @@ public partial class MainForm : Form
                 gameState!.Board = Board.FromStateString(stateUpdateMessage.StateString);
                 gameState.CurrentPlayer = stateUpdateMessage.CurrentTurn;
 
+                CountPiecesCapturesForSelfAndOpponent();
+
                 lastMove = stateUpdateMessage.LastMove != null
                     ? MoveParser.Parse(stateUpdateMessage.LastMove, gameState.Board)
                     : null;
@@ -133,6 +148,9 @@ public partial class MainForm : Form
 
                 gameState.MakeMove(move);
                 lastMove = move;
+
+                CountPiecesCapturesForSelfAndOpponent();
+
                 moveCache.Clear();
                 mainPanel.Invalidate();
                 break;
@@ -142,7 +160,7 @@ public partial class MainForm : Form
                 break;
 
             case PlayerConnectedMessage playerConnectedMessage:
-                if (role != Player.None)
+                if (playerConnectedMessage.Role != Player.None)
                 {
                     players[playerConnectedMessage.Role] = playerConnectedMessage.Participant;
                 }
@@ -154,7 +172,7 @@ public partial class MainForm : Form
                 break;
 
             case PlayerDisconnectedMessage playerDisconnectedMessage:
-                if (role != Player.None)
+                if (playerDisconnectedMessage.Role != Player.None)
                 {
                     players.Remove(playerDisconnectedMessage.Role);
                 }
@@ -184,9 +202,10 @@ public partial class MainForm : Form
 
         opponentName.Text = player2 != null
             ? player2.Name
-            : "Ожидаем оппонента . . .";
+            : "Ожидаем оппонента...";
 
         spectatorsCounter.Visible = spectatorsCount > 0;
+        spectatorLogo.Visible = spectatorsCount > 0;
 
         if (spectatorsCount > 0)
         {
@@ -410,6 +429,8 @@ public partial class MainForm : Form
         moveCache.Clear();
         mainPanel.Invalidate();
 
+        CountPiecesCapturesForSelfAndOpponent();
+
         lastMoveUci = move.ToUci();
 
         var message = new MoveRequestMessage()
@@ -419,6 +440,60 @@ public partial class MainForm : Form
 
         await bridge.SendMessage(message, cancellationToken: appCts.Token);
     }
+
+    private void CountPiecesCapturesForSelfAndOpponent()
+    {
+        flowLayoutPanelSelfCaptures.Controls.Clear();
+        flowLayoutPanelOpponentCaptures.Controls.Clear();
+
+        var isFlipped = role!.Value == Player.Black;
+
+        var capturedBlackPieces = startPieces
+            .ToDictionary(x => x.Key, x => x.Value - gameState?.Board.CountOf(Player.Black, x.Key));
+
+        foreach (PieceType pieceType in Enum.GetValues(typeof(PieceType)))
+        {
+            for (var i = 0; i < capturedBlackPieces[pieceType]; i++)
+            {
+                if (!isFlipped)
+                {
+                    flowLayoutPanelSelfCaptures.Controls.Add(CreatePiecePictureForCapture(Player.Black, pieceType));
+                }
+                else
+                {
+                    flowLayoutPanelOpponentCaptures.Controls.Add(CreatePiecePictureForCapture(Player.Black, pieceType));
+                }
+            }
+        }
+
+        var capturedWhitePieces = startPieces
+            .ToDictionary(x => x.Key, x => x.Value - gameState?.Board.CountOf(Player.White, x.Key));
+
+        foreach (PieceType pieceType in Enum.GetValues(typeof(PieceType)))
+        {
+            for (var i = 0; i < capturedWhitePieces[pieceType]; i++)
+            {
+                if (!isFlipped)
+                {
+                    flowLayoutPanelOpponentCaptures.Controls.Add(CreatePiecePictureForCapture(Player.White, pieceType));
+                }
+                else
+                {
+                    flowLayoutPanelSelfCaptures.Controls.Add(CreatePiecePictureForCapture(Player.White, pieceType));
+                }
+            }
+        }
+    }
+
+    private PictureBox CreatePiecePictureForCapture(Player player, PieceType pieceType)
+        => new()
+        {
+            Width = flowLayoutPanelSelfCaptures.Height,
+            Height = flowLayoutPanelSelfCaptures.Height,
+            Image = ImageHelper.GetImage(player, pieceType),
+            SizeMode = PictureBoxSizeMode.Zoom,
+            Margin = new Padding(0, 0, 0, 0),
+        };
 
     private void HandlePromotion(Position from, Position to)
     {
@@ -454,7 +529,7 @@ public partial class MainForm : Form
             if (option == Option.Restart)
             {
                 menu.Close();
-                RestartGame();
+                SendRestartRequest();
             }
             else
             {
@@ -465,12 +540,9 @@ public partial class MainForm : Form
         menu.ShowDialog();
     }
 
-    private void RestartGame()
+    private async void SendRestartRequest()
     {
-        moveCache.Clear();
-        lastMove = null;
-        gameState = new GameState(Board.Initial(), Player.White);
-        mainPanel.Invalidate();
+        await bridge.SendMessage(new RestartRequestMessage(), cancellationToken: appCts.Token);
     }
 
     private void MainForm_Resize(object sender, EventArgs e)
@@ -495,9 +567,31 @@ public partial class MainForm : Form
             menu.Close();
             if (option == Option.Restart)
             {
-                RestartGame();
+                SendRestartRequest();
             }
         };
         menu.ShowDialog();
+    }
+
+    private void pauseButton_Click(object sender, EventArgs e)
+    {
+        ShowPauseMenu();
+    }
+
+    private async void SendResign()
+    {
+        if (MessageBox.Show("Вы точно хотите сдаться?", "Подтверждение", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+        {
+            await bridge.SendMessage(new ResignRequestMessage(), cancellationToken: appCts.Token);
+        }
+    }
+
+    private void resignButton_Click(object sender, EventArgs e)
+    {
+        if (!IsGameOn)
+        {
+            return;
+        }
+        SendResign();
     }
 }

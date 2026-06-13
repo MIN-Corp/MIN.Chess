@@ -1,5 +1,6 @@
 ﻿using MIN.Chess.Client.Contracts.Enums;
 using MIN.Chess.Logic.Enums;
+using MIN.Chess.Logic.Extensions;
 using MIN.Chess.Logic.Models;
 
 namespace MIN.Chess.Client.Forms.HelperForms;
@@ -22,7 +23,7 @@ public partial class GameOverMenu : Form
         InitializeComponent();
 
         outcomeTitle.Text = GetWinnerText(result.Winner);
-        reason.Text = GetReasonText(result.Reason, currentPlayer);
+        reason.Text = GetReasonText(result, currentPlayer);
     }
 
     private static string GetWinnerText(Player player)
@@ -41,10 +42,11 @@ public partial class GameOverMenu : Form
             _ => ""
         };
 
-    private static string GetReasonText(EndReason reason, Player currentPlayer)
-    => reason switch
+    private static string GetReasonText(Result result, Player currentPlayer)
+    => result.Reason switch
     {
         EndReason.CheckMate => $"Мат - {GetPlayerString(currentPlayer)} не может ходить",
+        EndReason.Resign => $"{GetPlayerString(result.Winner.Opponent())} сдался",
         EndReason.StaleMate => $"Ничья - {GetPlayerString(currentPlayer)} не может ходить",
         EndReason.FiftyMoveRule => "Правило пятидесяти ходов",
         EndReason.InsufficientMaterial => "У обоих сторон не хватает фигур",

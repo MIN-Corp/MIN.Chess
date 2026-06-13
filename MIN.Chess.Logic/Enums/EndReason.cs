@@ -11,6 +11,11 @@ public enum EndReason
     CheckMate,
 
     /// <summary>
+    /// Сдача
+    /// </summary>
+    Resign,
+
+    /// <summary>
     /// Ничья
     /// </summary>
     StaleMate,

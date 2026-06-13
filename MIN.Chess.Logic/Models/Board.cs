@@ -67,6 +67,12 @@ public class Board
     }
 
     /// <summary>
+    /// Посчитать фигуры
+    /// </summary>
+    public int CountOf(Player player, PieceType type)
+        => PiecePositionsFor(player).Count(x => this[x]?.Type == type);
+
+    /// <summary>
     /// Получить доску от состояния в виде строки
     /// </summary>
     public static Board FromStateString(string stateString)

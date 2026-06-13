@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using MIN.Chess.Logic.Enums;
+using MIN.Chess.Logic.Extensions;
 using MIN.Chess.Logic.Models;
 using MIN.Chess.Logic.Services;
 using MIN.Chess.Messages;
@@ -25,6 +26,8 @@ static internal class Program
     private const int ConnectionTimeoutMs = 5_000;
 
     private static Move? lastMove = null;
+
+    private static int restartVote = 0;
 
     /// <summary>
     /// The main entry point for the application.
@@ -95,6 +98,14 @@ static internal class Program
             case MoveRequestMessage moveRequestMessage:
                 await HandleMove(moveRequestMessage);
                 break;
+
+            case ResignRequestMessage _:
+                await HandleResign(message);
+                break;
+
+            case RestartRequestMessage _:
+                await HandleRestart(message);
+                break;
         }
     }
 
@@ -149,7 +160,9 @@ static internal class Program
 
         Console.WriteLine("checking legalability . . .");
 
-        if (move.IsLegal(gameState.Board))
+        var senderRole = ResolveRole(Guid.Parse(moveRequestMessage.SenderId));
+
+        if (move.IsLegal(gameState.Board) && senderRole == gameState.CurrentPlayer)
         {
             gameState.MakeMove(move);
             lastMove = move;
@@ -181,6 +194,62 @@ static internal class Program
                 Result = gameState.Result!.Value,
             }, cancellationToken: appCts.Token);
             return;
+        }
+    }
+
+    private static async Task HandleResign(INetworkMessage message)
+    {
+        var senderId = Guid.Parse(message.SenderId);
+        var role = ResolveRole(senderId);
+
+        Console.WriteLine($"Resign received from {role}");
+
+        await bridge.SendMessage(new GameResultMessage()
+        {
+            Result = new Result(role.Opponent(), EndReason.Resign),
+        }, cancellationToken: appCts.Token);
+    }
+
+    private static async Task HandleRestart(INetworkMessage message)
+    {
+        if (!IsBothPlayersJoined())
+        {
+            await Restart();
+        }
+        else
+        {
+            restartVote++;
+            if (restartVote >= 2)
+            {
+                await Restart();
+                restartVote = 0;
+            }
+        }
+    }
+
+    private static async Task Restart()
+    {
+        lastMove = null;
+
+        if (players[Player.White] == null)
+        {
+            gameState.Board = players[Player.Black] == null
+                ? Board.Initial(Player.White)
+                : Board.Initial();
+        }
+        else if (players[Player.Black] == null)
+        {
+            gameState.Board = players[Player.White] == null
+                ? Board.Initial(Player.Black)
+                : Board.Initial();
+        }
+
+        if (IsBothPlayersJoined())
+        {
+            gameState.Board = Board.Initial();
+            gameState.CurrentPlayer = Player.White;
+
+            await SendStateUpdate();
         }
     }
 
@@ -255,13 +324,18 @@ static internal class Program
 
         if (IsBothPlayersJoined())
         {
-            await bridge.SendMessage(new StateUpdateMessage()
-            {
-                StateString = gameState.ToString(),
-                CurrentTurn = gameState.CurrentPlayer,
-                LastMove = null,
-            }, cancellationToken: appCts.Token);
+            await SendStateUpdate();
         }
+    }
+
+    private static async Task SendStateUpdate()
+    {
+        await bridge.SendMessage(new StateUpdateMessage()
+        {
+            StateString = gameState.ToString(),
+            CurrentTurn = gameState.CurrentPlayer,
+            LastMove = null,
+        }, cancellationToken: appCts.Token);
     }
 
     private static async Task HandleParticipantDisconnecting(Guid participantId)
