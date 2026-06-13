@@ -15,6 +15,7 @@ static internal class Program
 {
     private readonly static IClientProcessBridge bridge = new ClientProcessBridge();
     private readonly static GameState gameState = new(new Board(), Player.None);
+    private static readonly Dictionary<Guid, InitRequestMessage> pendingInits = [];
     private readonly static Dictionary<Guid, Participant> spectators = [];
     private readonly static CancellationTokenSource appCts = new();
     private readonly static Dictionary<Player, Participant?> players = new()
@@ -25,13 +26,9 @@ static internal class Program
 
     private const int ConnectionTimeoutMs = 5_000;
 
-    private static Move? lastMove = null;
+    private static Move? lastMove;
+    private static int restartVote;
 
-    private static int restartVote = 0;
-
-    /// <summary>
-    /// The main entry point for the application.
-    /// </summary>
     private static async Task Main(string[] args)
     {
         if (args.Length == 0)
@@ -87,8 +84,8 @@ static internal class Program
     {
         switch (message)
         {
-            case InitRequestMessage _:
-                await HandleInit(message);
+            case InitRequestMessage initRequestMessage:
+                await HandleInit(initRequestMessage);
                 break;
 
             case StateUpdateRequestMessage _:
@@ -106,10 +103,14 @@ static internal class Program
             case RestartRequestMessage _:
                 await HandleRestart(message);
                 break;
+
+            case ChangeRoleRequestMessage _:
+                await HandleChangeRole(message);
+                break;
         }
     }
 
-    private static async Task HandleInit(INetworkMessage message)
+    private static async Task HandleInit(InitRequestMessage message)
     {
         Console.WriteLine("InitRequestMessage received");
         Console.WriteLine($"sending init {gameState.ToString()}");
@@ -117,7 +118,7 @@ static internal class Program
         var senderId = Guid.Parse(message.SenderId);
         var role = ResolveRole(senderId);
 
-        Console.WriteLine($"ROLE {role.ToString()}");
+        Console.WriteLine($"ROLE {role}");
 
         Participant? sender;
 
@@ -128,16 +129,13 @@ static internal class Program
             spectators.TryGetValue(senderId, out sender);
         }
 
-        await bridge.SendMessage(new InitResponseMessage()
+        if (sender != null)
         {
-            StateString = gameState.ToString(),
-            CurrentTurn = gameState.CurrentPlayer,
-            ActivePlayers = players,
-            SpectorsCount = spectators.Count,
-            SelfParticipant = sender!,
-            RequesterRole = role,
-            LastMove = lastMove?.ToUci(),
-        }, RecipientId: senderId, cancellationToken: appCts.Token);
+            await SendInitResponse(sender);
+            return;
+        }
+
+        pendingInits[senderId] = message;
     }
 
     private static async Task StateUpdate(INetworkMessage message)
@@ -169,10 +167,7 @@ static internal class Program
         }
         else
         {
-            await bridge.SendMessage(new ErrorMessage()
-            {
-                Message = $"Нелегальный ход",
-            }, RecipientId: Guid.Parse(moveRequestMessage.SenderId), cancellationToken: appCts.Token);
+            await SendErrorMessageFor(moveRequestMessage.SenderId, "Нелегальный ход");
             return;
         }
 
@@ -204,6 +199,12 @@ static internal class Program
 
         Console.WriteLine($"Resign received from {role}");
 
+        if (role == Player.None)
+        {
+            await SendErrorMessageFor(message.SenderId, "У вас нету права на это");
+            return;
+        }
+
         await bridge.SendMessage(new GameResultMessage()
         {
             Result = new Result(role.Opponent(), EndReason.Resign),
@@ -212,6 +213,17 @@ static internal class Program
 
     private static async Task HandleRestart(INetworkMessage message)
     {
+        var senderId = Guid.Parse(message.SenderId);
+        var role = ResolveRole(senderId);
+
+        Console.WriteLine($"Restart received from {role}");
+
+        if (role == Player.None)
+        {
+            await SendErrorMessageFor(message.SenderId, "У вас нету права на это");
+            return;
+        }
+
         if (!IsBothPlayersJoined())
         {
             await Restart();
@@ -224,11 +236,84 @@ static internal class Program
                 await Restart();
                 restartVote = 0;
             }
+
+            await bridge.SendMessage(new RestartVoteMessage()
+            {
+                CurrentVotes = restartVote
+            }, cancellationToken: appCts.Token);
+        }
+    }
+
+    private static async Task HandleChangeRole(INetworkMessage message)
+    {
+        var senderId = Guid.Parse(message.SenderId);
+        var role = ResolveRole(senderId);
+
+        Console.WriteLine($"ChangeRole received from {role}");
+
+        if (IsBothPlayersJoined())
+        {
+            await SendErrorMessageFor(message.SenderId, "Не кого заменять");
+            return;
+        }
+
+        spectators.TryGetValue(senderId, out var participant);
+
+        if (participant == null)
+        {
+            Console.WriteLine($"Didnt found spectator {senderId}");
+            return;
+        }
+
+        if (players[Player.White] == null)
+        {
+            Console.WriteLine($"{participant.Name} joined as White");
+            players[Player.White] = participant;
+
+            gameState.Board = players[Player.Black] == null
+                ? Board.Initial(Player.White)
+                : Board.Initial();
+
+            if (players[Player.Black] != null)
+            {
+                gameState.CurrentPlayer = Player.White;
+            }
+
+            await bridge.SendMessage(new PlayerConnectedMessage()
+            {
+                Role = Player.White,
+                Participant = participant,
+            }, cancellationToken: appCts.Token);
+        }
+        else if (players[Player.Black] == null)
+        {
+            Console.WriteLine($"{participant.Name} joined as Black");
+            players[Player.Black] = participant;
+
+            gameState.Board = Board.Initial();
+            gameState.CurrentPlayer = Player.White;
+
+            await bridge.SendMessage(new PlayerConnectedMessage()
+            {
+                Role = Player.Black,
+                Participant = participant,
+            }, cancellationToken: appCts.Token);
+        }
+
+        await bridge.SendMessage(new PlayerDisconnectedMessage()
+        {
+            Role = Player.None,
+        }, cancellationToken: appCts.Token);
+
+        if (IsBothPlayersJoined())
+        {
+            await SendStateUpdate();
         }
     }
 
     private static async Task Restart()
     {
+        gameState.Result = null;
         lastMove = null;
 
         if (players[Player.White] == null)
@@ -273,7 +358,7 @@ static internal class Program
     {
         if (IsBothPlayersJoined())
         {
-            Console.WriteLine($"{participant.Name} joined as Spectator");
+            Console.WriteLine($"{participant.Id} joined as Spectator");
             spectators[participant.Id] = participant;
 
             await bridge.SendMessage(new PlayerConnectedMessage()
@@ -322,10 +407,32 @@ static internal class Program
             }, cancellationToken: appCts.Token);
         }
 
+        if (pendingInits.Remove(participant.Id, out _))
+        {
+            await SendInitResponse(participant);
+        }
+
         if (IsBothPlayersJoined())
         {
             await SendStateUpdate();
         }
+    }
+
+    private static async Task SendInitResponse(Participant participant)
+    {
+        var role = ResolveRole(participant.Id);
+        var initResponse = new InitResponseMessage
+        {
+            StateString = new StateString(gameState.CurrentPlayer, gameState.Board).ToString(),
+            CurrentTurn = gameState.CurrentPlayer,
+            RequesterRole = role,
+            SelfParticipant = participant,
+            LastMove = lastMove?.ToUci(),
+            ActivePlayers = players,
+            SpectorsCount = spectators.Count,
+        };
+
+        await bridge.SendMessage(initResponse, RecipientId: participant.Id, cancellationToken: appCts.Token);
     }
 
     private static async Task SendStateUpdate()
@@ -373,6 +480,14 @@ static internal class Program
                 Role = Player.Black,
             }, cancellationToken: appCts.Token);
         }
+    }
+
+    private static async Task SendErrorMessageFor(string senderId, string message)
+    {
+        await bridge.SendMessage(new ErrorMessage()
+        {
+            Message = message,
+        }, RecipientId: Guid.Parse(senderId), cancellationToken: appCts.Token);
     }
 
     private static bool IsBothPlayersJoined()

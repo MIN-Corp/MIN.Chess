@@ -29,7 +29,7 @@ public record InitResponseMessage : BaseNetworkMessage
     /// <summary>
     /// Присвоенный участник
     /// </summary>
-    public Participant SelfParticipant { get; init; } = null!;
+    public required Participant SelfParticipant { get; init; }
 
     /// <summary>
     /// Играющие игроки

@@ -21,11 +21,10 @@ public partial class MainForm : Form
 {
     private const int ConnectionTimeoutMs = 5_000;
 
+    private readonly SynchronizationContext uiContext;
     private readonly IClientProcessBridge bridge;
     private readonly CancellationTokenSource appCts;
     private readonly Dictionary<Position, Move> moveCache = [];
-    private Dictionary<Player, Participant?> players = [];
-
     private readonly Dictionary<PieceType, int> startPieces = new()
     {
         [PieceType.Pawn] = 8,
@@ -36,8 +35,11 @@ public partial class MainForm : Form
         [PieceType.King] = 1,
     };
 
+    private Dictionary<Player, Participant?> players = [];
     private Player? role;
-
+    private Participant? participant;
+    private GameOverMenu? gameOverMenu;
+    private PauseMenu? pauseMenu;
     private GameState? gameState;
     private Position? selectedPos;
     private Rectangle[,] cellRectangles = null!;
@@ -45,6 +47,7 @@ public partial class MainForm : Form
     private Move? lastMove;
     private string? lastMoveUci;
     private int spectatorsCount;
+    private int restartVote;
 
     private bool IsGameOn => lastMove != null;
 
@@ -53,6 +56,7 @@ public partial class MainForm : Form
     /// </summary>
     public MainForm(IClientProcessBridge bridge, CancellationTokenSource appCts, string connectionString)
     {
+        uiContext = SynchronizationContext.Current ?? new SynchronizationContext();
         this.bridge = bridge;
         this.appCts = appCts;
         InitializeComponent();
@@ -69,21 +73,43 @@ public partial class MainForm : Form
 
     private async void InitializeNetworking(string connectionString)
     {
-        bridge.RegisterAllFromAnchor<IChessMessagesAnchor>();
-        await bridge.ConnectAsync(connectionString, ConnectionTimeoutMs, appCts.Token);
+        try
+        {
+            bridge.RegisterAllFromAnchor<IChessMessagesAnchor>();
+            await bridge.ConnectAsync(connectionString, ConnectionTimeoutMs, appCts.Token);
 
-        bridge.NetworkMessageReceived += NetworkMessageReceived;
+            bridge.NetworkMessageReceived += NetworkMessageReceived;
 
-        await bridge.StartListeningAsync(appCts.Token);
+            await bridge.StartListeningAsync(appCts.Token);
 
-        await bridge.SendReadyMessage(appCts.Token);
+            await bridge.SendReadyMessage(appCts.Token);
 
-        await bridge.SendMessage(new InitRequestMessage(), cancellationToken: appCts.Token);
+            await bridge.SendMessage(new InitRequestMessage(), cancellationToken: appCts.Token);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private async void NetworkMessageReceived(object? sender, INetworkMessage message)
     {
-        await HandleMessage(message);
+        if (InvokeRequired)
+        {
+            BeginInvoke(async () =>
+            {
+                try
+                {
+                    await HandleMessage(message);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "Network Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            });
+            return;
+        }
+        _ = HandleMessage(message);
     }
 
     private async Task HandleMessage(INetworkMessage message)
@@ -112,6 +138,7 @@ public partial class MainForm : Form
                     : null;
 
                 role = initResponseMessage.RequesterRole;
+                participant = initResponseMessage.SelfParticipant;
 
                 players = initResponseMessage.ActivePlayers.ToDictionary();
                 spectatorsCount = initResponseMessage.SpectorsCount;
@@ -156,33 +183,77 @@ public partial class MainForm : Form
                 break;
 
             case GameResultMessage gameResultMessage:
-                ShowGameOver(gameResultMessage.Result, gameState!.CurrentPlayer);
+                gameState?.CurrentPlayer = Player.None;
+                uiContext.Post(_ =>
+                {
+                    ShowGameOver(gameResultMessage.Result, gameState!.CurrentPlayer);
+                }, this);
+                break;
+
+            case ErrorMessage errorMessage:
+                MessageBox.Show(errorMessage.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                break;
+
+            case RestartVoteMessage restartVoteMessage:
+                var wasAboveZero = restartVote > 0;
+                restartVote = restartVoteMessage.CurrentVotes;
+                UpdateVoteAndPlayersForMenu(wasAboveZero);
                 break;
 
             case PlayerConnectedMessage playerConnectedMessage:
                 if (playerConnectedMessage.Role != Player.None)
                 {
                     players[playerConnectedMessage.Role] = playerConnectedMessage.Participant;
+                    changeRoleButton.Visible = CountPlayers() == 1 && role!.Value == Player.None;
+
+                    if (participant?.Id == playerConnectedMessage.Participant.Id && role!.Value == Player.None)
+                    {
+                        role = playerConnectedMessage.Role;
+                        CalculateCellRectangles();
+                    }
                 }
                 else
                 {
                     spectatorsCount++;
                 }
                 UpdatePlayersInfo();
+                UpdateVoteAndPlayersForMenu(false);
                 break;
 
             case PlayerDisconnectedMessage playerDisconnectedMessage:
                 if (playerDisconnectedMessage.Role != Player.None)
                 {
                     players.Remove(playerDisconnectedMessage.Role);
+                    gameState?.CurrentPlayer = Player.None;
+
+                    if (role!.Value == Player.None)
+                    {
+                        changeRoleButton.Visible = true;
+                    }
                 }
                 else
                 {
                     spectatorsCount--;
                 }
                 UpdatePlayersInfo();
+                UpdateVoteAndPlayersForMenu(false);
                 break;
         }
+    }
+
+    private void UpdateVoteAndPlayersForMenu(bool wasAboveZero)
+    {
+        if (wasAboveZero)
+        {
+            gameOverMenu?.Close();
+            pauseMenu?.Close();
+            return;
+        }
+
+        restartQuote.Visible = restartVote > 1;
+
+        gameOverMenu?.UpdateVoteDisplay(restartVote, CountPlayers());
+        pauseMenu?.UpdateVoteDisplay(restartVote, CountPlayers());
     }
 
     private void UpdatePlayersInfo()
@@ -196,7 +267,9 @@ public partial class MainForm : Form
 
         players.TryGetValue(resultRole, out var player1);
 
-        selfRoleName.Text = player1?.Name;
+        selfRoleName.Text = player1 != null
+            ? player1.Name
+            : "Ожидаем оппонента...";
 
         players.TryGetValue(resultRole.Opponent(), out var player2);
 
@@ -422,23 +495,30 @@ public partial class MainForm : Form
             return;
         }
 
-        gameState.MakeMove(move);
-
-        lastMove = move;
-
-        moveCache.Clear();
-        mainPanel.Invalidate();
-
-        CountPiecesCapturesForSelfAndOpponent();
-
-        lastMoveUci = move.ToUci();
-
-        var message = new MoveRequestMessage()
+        try
         {
-            MoveUciNotation = lastMoveUci,
-        };
+            gameState.MakeMove(move);
 
-        await bridge.SendMessage(message, cancellationToken: appCts.Token);
+            lastMove = move;
+
+            moveCache.Clear();
+            mainPanel.Invalidate();
+
+            CountPiecesCapturesForSelfAndOpponent();
+
+            lastMoveUci = move.ToUci();
+
+            var message = new MoveRequestMessage()
+            {
+                MoveUciNotation = lastMoveUci,
+            };
+
+            await bridge.SendMessage(message, cancellationToken: appCts.Token);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Move Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private void CountPiecesCapturesForSelfAndOpponent()
@@ -495,6 +575,23 @@ public partial class MainForm : Form
             Margin = new Padding(0, 0, 0, 0),
         };
 
+    private int CountPlayers()
+    {
+        var count = 0;
+
+        if (players.TryGetValue(Player.White, out var white) && white != null)
+        {
+            count++;
+        }
+
+        if (players.TryGetValue(Player.Black, out var black) && black != null)
+        {
+            count++;
+        }
+
+        return count;
+    }
+
     private void HandlePromotion(Position from, Position to)
     {
         if (gameState == null)
@@ -523,26 +620,33 @@ public partial class MainForm : Form
             return;
         }
 
-        var menu = new GameOverMenu(result, currentPlayer);
-        menu.OnOptionSelected += option =>
+        gameOverMenu = new GameOverMenu(role!.Value, result, currentPlayer, CountPlayers(), restartVote);
+        gameOverMenu.OnOptionSelected += option =>
         {
             if (option == Option.Restart)
             {
-                menu.Close();
                 SendRestartRequest();
             }
             else
             {
-                Close();
+                gameOverMenu.Close();
             }
         };
 
-        menu.ShowDialog();
+        gameOverMenu.ShowDialog();
+        gameOverMenu = null;
     }
 
     private async void SendRestartRequest()
     {
-        await bridge.SendMessage(new RestartRequestMessage(), cancellationToken: appCts.Token);
+        try
+        {
+            await bridge.SendMessage(new RestartRequestMessage(), cancellationToken: appCts.Token);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Restart Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private void MainForm_Resize(object sender, EventArgs e)
@@ -561,16 +665,20 @@ public partial class MainForm : Form
 
     private void ShowPauseMenu()
     {
-        var menu = new PauseMenu();
-        menu.OnOptionSelected += option =>
+        pauseMenu = new PauseMenu(CountPlayers(), restartVote);
+        pauseMenu.OnOptionSelected += option =>
         {
-            menu.Close();
             if (option == Option.Restart)
             {
                 SendRestartRequest();
             }
+            else
+            {
+                pauseMenu.Close();
+            }
         };
-        menu.ShowDialog();
+        pauseMenu.ShowDialog();
+        pauseMenu = null;
     }
 
     private void pauseButton_Click(object sender, EventArgs e)
@@ -582,7 +690,14 @@ public partial class MainForm : Form
     {
         if (MessageBox.Show("Вы точно хотите сдаться?", "Подтверждение", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
         {
-            await bridge.SendMessage(new ResignRequestMessage(), cancellationToken: appCts.Token);
+            try
+            {
+                await bridge.SendMessage(new ResignRequestMessage(), cancellationToken: appCts.Token);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Resign Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 
@@ -593,5 +708,20 @@ public partial class MainForm : Form
             return;
         }
         SendResign();
+    }
+
+    private void restartQuote_Click(object sender, EventArgs e)
+    {
+        SendRestartRequest();
+    }
+
+    private async void SendChangeRoleRequest()
+    {
+        await bridge.SendMessage(new ChangeRoleRequestMessage(), cancellationToken: appCts.Token);
+    }
+
+    private void changeRoleButton_Click(object sender, EventArgs e)
+    {
+        SendChangeRoleRequest();
     }
 }

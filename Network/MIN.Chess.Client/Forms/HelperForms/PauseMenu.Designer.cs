@@ -50,7 +50,7 @@
             tableLayoutPanel.RowCount = 2;
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 33.3333321F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 33.3333321F));
-            tableLayoutPanel.Size = new Size(379, 149);
+            tableLayoutPanel.Size = new Size(379, 120);
             tableLayoutPanel.TabIndex = 0;
             // 
             // title
@@ -60,7 +60,7 @@
             tableLayoutPanel.SetColumnSpan(title, 2);
             title.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
             title.ForeColor = Color.Black;
-            title.Location = new Point(151, 22);
+            title.Location = new Point(151, 15);
             title.Name = "title";
             title.Size = new Size(77, 30);
             title.TabIndex = 1;
@@ -75,9 +75,9 @@
             restartButton.FlatStyle = FlatStyle.Flat;
             restartButton.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
             restartButton.ForeColor = Color.FromArgb(167, 157, 255);
-            restartButton.Location = new Point(192, 77);
+            restartButton.Location = new Point(192, 63);
             restartButton.Name = "restartButton";
-            restartButton.Size = new Size(184, 69);
+            restartButton.Size = new Size(184, 54);
             restartButton.TabIndex = 2;
             restartButton.Text = "Рестарт (0/1)";
             restartButton.UseVisualStyleBackColor = false;
@@ -91,9 +91,9 @@
             continueButton.FlatStyle = FlatStyle.Flat;
             continueButton.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
             continueButton.ForeColor = Color.FromArgb(248, 249, 255);
-            continueButton.Location = new Point(3, 77);
+            continueButton.Location = new Point(3, 63);
             continueButton.Name = "continueButton";
-            continueButton.Size = new Size(183, 69);
+            continueButton.Size = new Size(183, 54);
             continueButton.TabIndex = 3;
             continueButton.Text = "Продолжить";
             continueButton.UseVisualStyleBackColor = false;
@@ -103,9 +103,9 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(379, 149);
+            ClientSize = new Size(379, 120);
             Controls.Add(tableLayoutPanel);
-            FormBorderStyle = FormBorderStyle.None;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
             Name = "PauseMenu";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Пауза";

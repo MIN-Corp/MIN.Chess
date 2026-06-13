@@ -95,7 +95,7 @@
             exitButton.Name = "exitButton";
             exitButton.Size = new Size(184, 45);
             exitButton.TabIndex = 2;
-            exitButton.Text = "Выйти из активности";
+            exitButton.Text = "Закрыть";
             exitButton.UseVisualStyleBackColor = false;
             exitButton.Click += exitButton_Click;
             // 
@@ -121,7 +121,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(379, 149);
             Controls.Add(tableLayoutPanel);
-            FormBorderStyle = FormBorderStyle.None;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
             Name = "GameOverMenu";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Конец игры";

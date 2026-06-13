@@ -64,4 +64,14 @@ public enum NetworkMessageType : byte
     /// Первоначальные данные от сервера
     /// </summary>
     InitResponse = 11,
+
+    /// <summary>
+    /// Голос на рестарт
+    /// </summary>
+    RestartVote = 12,
+
+    /// <summary>
+    /// Запрос на смену роли
+    /// </summary>
+    ChangeRole = 13,
 }

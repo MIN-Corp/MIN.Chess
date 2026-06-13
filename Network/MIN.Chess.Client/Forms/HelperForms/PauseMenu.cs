@@ -15,9 +15,23 @@ public partial class PauseMenu : Form
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="PauseMenu"/>
     /// </summary>
-    public PauseMenu()
+    public PauseMenu(int players, int votes)
     {
         InitializeComponent();
+
+        restartButton.Text = $"Рестарт ({votes}/{players})";
+    }
+
+    /// <summary>
+    /// Обновить значение голосов рестарта
+    /// </summary>
+    public void UpdateVoteDisplay(int newVotes, int newPlayers)
+    {
+        restartButton.Text = $"Рестарт ({newVotes}/{newPlayers})";
+        if (newVotes == newPlayers)
+        {
+            Close();
+        }
     }
 
     private void continueButton_Click(object sender, EventArgs e)

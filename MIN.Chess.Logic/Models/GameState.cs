@@ -27,7 +27,7 @@ public class GameState
     /// <summary>
     /// Результат игры
     /// </summary>
-    public Result? Result { get; private set; }
+    public Result? Result { get; set; }
 
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="GameState"/>
@@ -56,7 +56,7 @@ public class GameState
             return [];
         }
 
-        if (role != null && role != CurrentPlayer)
+        if (role != null && role != CurrentPlayer && role != Player.None)
         {
             return [];
         }
