@@ -46,7 +46,7 @@ public interface IClientProcessBridge
     /// <summary>
     /// Отправить сообщение по сети
     /// </summary>
-    Task SendMessage<T>(T message, Guid? RecipientId = null, string? msgType = null, CancellationToken cancellationToken = default)
+    Task SendMessage<T>(T message, Guid? RecipientId = null, IEnumerable<Guid>? BroadcastExcludeIds = null, string? msgType = null, CancellationToken cancellationToken = default)
         where T : class, INetworkMessage;
 
     /// <summary>

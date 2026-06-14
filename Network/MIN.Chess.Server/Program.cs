@@ -15,7 +15,7 @@ static internal class Program
 {
     private readonly static IClientProcessBridge bridge = new ClientProcessBridge();
     private readonly static GameState gameState = new(new Board(), Player.None);
-    private static readonly Dictionary<Guid, InitRequestMessage> pendingInits = [];
+    private readonly static Dictionary<Guid, InitRequestMessage> pendingInits = [];
     private readonly static Dictionary<Guid, Participant> spectators = [];
     private readonly static CancellationTokenSource appCts = new();
     private readonly static Dictionary<Player, Participant?> players = new()
@@ -24,10 +24,22 @@ static internal class Program
         { Player.Black, null },
     };
 
+    private readonly static Dictionary<Player, bool> restartVote = new()
+    {
+        { Player.White, false },
+        { Player.Black, false },
+    };
+
+    private readonly static Dictionary<Player, bool> drawVote = new()
+    {
+        { Player.White, false },
+        { Player.Black, false },
+    };
+
+
     private const int ConnectionTimeoutMs = 5_000;
 
     private static Move? lastMove;
-    private static int restartVote;
 
     private static async Task Main(string[] args)
     {
@@ -100,6 +112,10 @@ static internal class Program
                 await HandleResign(message);
                 break;
 
+            case DrawRequestMessage _:
+                await HandleDraw(message);
+                break;
+
             case RestartRequestMessage _:
                 await HandleRestart(message);
                 break;
@@ -158,7 +174,8 @@ static internal class Program
 
         Console.WriteLine("checking legalability . . .");
 
-        var senderRole = ResolveRole(Guid.Parse(moveRequestMessage.SenderId));
+        var senderId = Guid.Parse(moveRequestMessage.SenderId);
+        var senderRole = ResolveRole(senderId);
 
         if (move.IsLegal(gameState.Board) && senderRole == gameState.CurrentPlayer)
         {
@@ -177,7 +194,9 @@ static internal class Program
         {
             MoveUci = moveRequestMessage.MoveUciNotation,
             CurrentPlayer = gameState.CurrentPlayer,
-        }, cancellationToken: appCts.Token);
+        },
+        BroadcastExcludeIds: GetDefaultExcludeBroadcastListWith(senderId),
+        cancellationToken: appCts.Token);
 
         gameState.CheckForGameOver();
 
@@ -211,6 +230,50 @@ static internal class Program
         }, cancellationToken: appCts.Token);
     }
 
+    private static async Task HandleDraw(INetworkMessage message)
+    {
+        var senderId = Guid.Parse(message.SenderId);
+        var role = ResolveRole(senderId);
+
+        Console.WriteLine($"Draw request received from {role}");
+
+        if (role == Player.None)
+        {
+            await SendErrorMessageFor(message.SenderId, "У вас нету права на это");
+            return;
+        }
+
+        if (drawVote[role] == true)
+        {
+            return;
+        }
+
+        if (!IsBothPlayersJoined())
+        {
+            return;
+        }
+        else
+        {
+            var votes = 1;
+            drawVote[role] = true;
+            if (drawVote[Player.White] && drawVote[Player.Black])
+            {
+                votes = 0;
+                drawVote[Player.White] = false;
+                drawVote[Player.Black] = false;
+                await bridge.SendMessage(new GameResultMessage()
+                {
+                    Result = Result.Draw(EndReason.Draw)
+                }, cancellationToken: appCts.Token);
+            }
+
+            await bridge.SendMessage(new DrawVoteMessage()
+            {
+                CurrentVotes = votes
+            }, cancellationToken: appCts.Token);
+        }
+    }
+
     private static async Task HandleRestart(INetworkMessage message)
     {
         var senderId = Guid.Parse(message.SenderId);
@@ -224,22 +287,30 @@ static internal class Program
             return;
         }
 
+        if (restartVote[role] == true)
+        {
+            return;
+        }
+
         if (!IsBothPlayersJoined())
         {
-            await Restart();
+            return;
         }
         else
         {
-            restartVote++;
-            if (restartVote >= 2)
+            var votes = 1;
+            restartVote[role] = true;
+            if (restartVote[Player.White] && restartVote[Player.Black])
             {
                 await Restart();
-                restartVote = 0;
+                votes = 0;
+                restartVote[Player.White] = false;
+                restartVote[Player.Black] = false;
             }
 
             await bridge.SendMessage(new RestartVoteMessage()
             {
-                CurrentVotes = restartVote
+                CurrentVotes = votes
             }, cancellationToken: appCts.Token);
         }
     }
@@ -300,6 +371,8 @@ static internal class Program
             }, cancellationToken: appCts.Token);
         }
 
+        spectators.Remove(senderId);
+
         await bridge.SendMessage(new PlayerDisconnectedMessage()
         {
             Role = Player.None,
@@ -308,6 +381,18 @@ static internal class Program
         if (IsBothPlayersJoined())
         {
             await SendStateUpdate();
+        }
+    }
+
+    private static IEnumerable<Guid>? GetDefaultExcludeBroadcastListWith(Guid? excludeId)
+    {
+        if (excludeId != null)
+        {
+            return pendingInits.Keys.Append(excludeId.Value);
+        }
+        else
+        {
+            return pendingInits.Keys;
         }
     }
 
@@ -365,7 +450,18 @@ static internal class Program
             {
                 Role = Player.None,
                 Participant = participant,
-            }, cancellationToken: appCts.Token);
+            }, BroadcastExcludeIds: GetDefaultExcludeBroadcastListWith(participant.Id),
+            cancellationToken: appCts.Token);
+
+            if (pendingInits.Remove(participant.Id, out _))
+            {
+                Console.WriteLine($"SENDING INIT RESPONSE TO {participant.Id}");
+                await SendInitResponse(participant);
+            }
+            else
+            {
+                Console.WriteLine($"DIDNT FOUND {participant.Id} IN PENDING, MUST HAVE ALREADY RECEIVED");
+            }
 
             return;
         }
@@ -390,7 +486,8 @@ static internal class Program
             {
                 Role = Player.White,
                 Participant = participant,
-            }, cancellationToken: appCts.Token);
+            }, BroadcastExcludeIds: GetDefaultExcludeBroadcastListWith(participant.Id),
+            cancellationToken: appCts.Token);
         }
         else if (players[Player.Black] == null)
         {
@@ -404,17 +501,23 @@ static internal class Program
             {
                 Role = Player.Black,
                 Participant = participant,
-            }, cancellationToken: appCts.Token);
+            }, BroadcastExcludeIds: GetDefaultExcludeBroadcastListWith(participant.Id),
+            cancellationToken: appCts.Token);
         }
 
         if (pendingInits.Remove(participant.Id, out _))
         {
+            Console.WriteLine($"SENDING INIT RESPONSE TO {participant.Id}");
             await SendInitResponse(participant);
+        }
+        else
+        {
+            Console.WriteLine($"DIDNT FOUND {participant.Id} IN PENDING, MUST HAVE ALREADY RECEIVED");
         }
 
         if (IsBothPlayersJoined())
         {
-            await SendStateUpdate();
+            await SendStateUpdate(participant.Id);
         }
     }
 
@@ -435,14 +538,14 @@ static internal class Program
         await bridge.SendMessage(initResponse, RecipientId: participant.Id, cancellationToken: appCts.Token);
     }
 
-    private static async Task SendStateUpdate()
+    private static async Task SendStateUpdate(Guid? broadcastExcludeId = null)
     {
         await bridge.SendMessage(new StateUpdateMessage()
         {
             StateString = gameState.ToString(),
             CurrentTurn = gameState.CurrentPlayer,
             LastMove = null,
-        }, cancellationToken: appCts.Token);
+        }, BroadcastExcludeIds: GetDefaultExcludeBroadcastListWith(broadcastExcludeId), cancellationToken: appCts.Token);
     }
 
     private static async Task HandleParticipantDisconnecting(Guid participantId)

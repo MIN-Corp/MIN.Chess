@@ -38,6 +38,7 @@ namespace MIN.Chess.Client.Forms
             spectatorsCounter = new MIN.Chess.Client.Components.Labels.Heading1Label();
             spectatorLogo = new PictureBox();
             tableLayoutPanelButtons = new TableLayoutPanel();
+            drawButton = new Button();
             pauseButton = new Button();
             resignButton = new Button();
             tableLayoutPanelOpponent = new TableLayoutPanel();
@@ -46,30 +47,33 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanelSelf = new TableLayoutPanel();
             flowLayoutPanelSelfCaptures = new FlowLayoutPanel();
             selfRoleName = new MIN.Chess.Client.Components.Labels.Heading3Label();
-            restartQuote = new MIN.Chess.Client.Components.Labels.Heading3Label();
             changeRoleButton = new MIN.Chess.Client.Components.Buttons.InvertedButton();
+            flowLayoutPanelVotes = new FlowLayoutPanel();
+            restartQuote = new MIN.Chess.Client.Components.Labels.Heading3Label();
+            drawQuote = new MIN.Chess.Client.Components.Labels.Heading3Label();
             tableLayoutPanel.SuspendLayout();
             tableLayoutPanelSpectating.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)spectatorLogo).BeginInit();
             tableLayoutPanelButtons.SuspendLayout();
             tableLayoutPanelOpponent.SuspendLayout();
             tableLayoutPanelSelf.SuspendLayout();
+            flowLayoutPanelVotes.SuspendLayout();
             SuspendLayout();
             // 
             // tableLayoutPanel
             // 
             tableLayoutPanel.ColumnCount = 3;
-            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200F));
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 180F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200F));
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 180F));
             tableLayoutPanel.Controls.Add(settingsTitle, 0, 1);
             tableLayoutPanel.Controls.Add(mainPanel, 1, 0);
             tableLayoutPanel.Controls.Add(tableLayoutPanelSpectating, 2, 0);
             tableLayoutPanel.Controls.Add(tableLayoutPanelButtons, 2, 4);
             tableLayoutPanel.Controls.Add(tableLayoutPanelOpponent, 0, 0);
             tableLayoutPanel.Controls.Add(tableLayoutPanelSelf, 0, 4);
-            tableLayoutPanel.Controls.Add(restartQuote, 2, 3);
             tableLayoutPanel.Controls.Add(changeRoleButton, 2, 1);
+            tableLayoutPanel.Controls.Add(flowLayoutPanelVotes, 2, 3);
             tableLayoutPanel.Dock = DockStyle.Fill;
             tableLayoutPanel.Location = new Point(0, 0);
             tableLayoutPanel.Margin = new Padding(0);
@@ -89,7 +93,7 @@ namespace MIN.Chess.Client.Forms
             settingsTitle.AutoSize = true;
             settingsTitle.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             settingsTitle.ForeColor = Color.White;
-            settingsTitle.Location = new Point(30, 75);
+            settingsTitle.Location = new Point(20, 75);
             settingsTitle.Name = "settingsTitle";
             settingsTitle.Size = new Size(139, 21);
             settingsTitle.TabIndex = 10;
@@ -100,11 +104,11 @@ namespace MIN.Chess.Client.Forms
             // 
             mainPanel.BackgroundImageLayout = ImageLayout.Zoom;
             mainPanel.Dock = DockStyle.Fill;
-            mainPanel.Location = new Point(200, 0);
+            mainPanel.Location = new Point(180, 0);
             mainPanel.Margin = new Padding(0);
             mainPanel.Name = "mainPanel";
             tableLayoutPanel.SetRowSpan(mainPanel, 5);
-            mainPanel.Size = new Size(584, 579);
+            mainPanel.Size = new Size(624, 579);
             mainPanel.TabIndex = 0;
             // 
             // tableLayoutPanelSpectating
@@ -114,12 +118,12 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanelSpectating.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tableLayoutPanelSpectating.Controls.Add(spectatorsCounter, 0, 0);
             tableLayoutPanelSpectating.Controls.Add(spectatorLogo, 1, 0);
-            tableLayoutPanelSpectating.Location = new Point(787, 3);
+            tableLayoutPanelSpectating.Location = new Point(807, 3);
             tableLayoutPanelSpectating.Name = "tableLayoutPanelSpectating";
             tableLayoutPanelSpectating.RowCount = 1;
             tableLayoutPanelSpectating.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tableLayoutPanelSpectating.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-            tableLayoutPanelSpectating.Size = new Size(194, 42);
+            tableLayoutPanelSpectating.Size = new Size(174, 42);
             tableLayoutPanelSpectating.TabIndex = 5;
             // 
             // spectatorsCounter
@@ -146,18 +150,33 @@ namespace MIN.Chess.Client.Forms
             // 
             // tableLayoutPanelButtons
             // 
-            tableLayoutPanelButtons.ColumnCount = 3;
+            tableLayoutPanelButtons.ColumnCount = 4;
+            tableLayoutPanelButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42F));
             tableLayoutPanelButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42F));
             tableLayoutPanelButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tableLayoutPanelButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42F));
-            tableLayoutPanelButtons.Controls.Add(pauseButton, 2, 0);
+            tableLayoutPanelButtons.Controls.Add(drawButton, 1, 0);
+            tableLayoutPanelButtons.Controls.Add(pauseButton, 3, 0);
             tableLayoutPanelButtons.Controls.Add(resignButton, 0, 0);
-            tableLayoutPanelButtons.Location = new Point(787, 534);
+            tableLayoutPanelButtons.Location = new Point(807, 534);
             tableLayoutPanelButtons.Name = "tableLayoutPanelButtons";
             tableLayoutPanelButtons.RowCount = 1;
             tableLayoutPanelButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanelButtons.Size = new Size(194, 42);
+            tableLayoutPanelButtons.Size = new Size(174, 42);
             tableLayoutPanelButtons.TabIndex = 6;
+            // 
+            // drawButton
+            // 
+            drawButton.BackgroundImage = Properties.Resources.draw;
+            drawButton.BackgroundImageLayout = ImageLayout.Zoom;
+            drawButton.Dock = DockStyle.Fill;
+            drawButton.ForeColor = Color.Black;
+            drawButton.Location = new Point(45, 3);
+            drawButton.Name = "drawButton";
+            drawButton.Size = new Size(36, 36);
+            drawButton.TabIndex = 11;
+            drawButton.UseVisualStyleBackColor = true;
+            drawButton.Click += drawButton_Click;
             // 
             // pauseButton
             // 
@@ -165,7 +184,7 @@ namespace MIN.Chess.Client.Forms
             pauseButton.BackgroundImageLayout = ImageLayout.Zoom;
             pauseButton.Dock = DockStyle.Fill;
             pauseButton.ForeColor = Color.Black;
-            pauseButton.Location = new Point(155, 3);
+            pauseButton.Location = new Point(135, 3);
             pauseButton.Name = "pauseButton";
             pauseButton.Size = new Size(36, 36);
             pauseButton.TabIndex = 10;
@@ -194,9 +213,9 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanelOpponent.Location = new Point(3, 3);
             tableLayoutPanelOpponent.Name = "tableLayoutPanelOpponent";
             tableLayoutPanelOpponent.RowCount = 2;
-            tableLayoutPanelOpponent.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+            tableLayoutPanelOpponent.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
             tableLayoutPanelOpponent.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanelOpponent.Size = new Size(194, 42);
+            tableLayoutPanelOpponent.Size = new Size(174, 42);
             tableLayoutPanelOpponent.TabIndex = 7;
             // 
             // opponentName
@@ -206,17 +225,17 @@ namespace MIN.Chess.Client.Forms
             opponentName.ForeColor = Color.White;
             opponentName.Location = new Point(3, 0);
             opponentName.Name = "opponentName";
-            opponentName.Size = new Size(104, 21);
+            opponentName.Size = new Size(104, 20);
             opponentName.TabIndex = 2;
             opponentName.Text = "Загрузка . . .";
             // 
             // flowLayoutPanelOpponentCaptures
             // 
             flowLayoutPanelOpponentCaptures.Dock = DockStyle.Fill;
-            flowLayoutPanelOpponentCaptures.Location = new Point(0, 30);
+            flowLayoutPanelOpponentCaptures.Location = new Point(0, 20);
             flowLayoutPanelOpponentCaptures.Margin = new Padding(0);
             flowLayoutPanelOpponentCaptures.Name = "flowLayoutPanelOpponentCaptures";
-            flowLayoutPanelOpponentCaptures.Size = new Size(194, 12);
+            flowLayoutPanelOpponentCaptures.Size = new Size(174, 22);
             flowLayoutPanelOpponentCaptures.TabIndex = 3;
             flowLayoutPanelOpponentCaptures.WrapContents = false;
             // 
@@ -229,18 +248,18 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanelSelf.Location = new Point(3, 534);
             tableLayoutPanelSelf.Name = "tableLayoutPanelSelf";
             tableLayoutPanelSelf.RowCount = 2;
-            tableLayoutPanelSelf.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+            tableLayoutPanelSelf.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
             tableLayoutPanelSelf.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanelSelf.Size = new Size(194, 42);
+            tableLayoutPanelSelf.Size = new Size(174, 42);
             tableLayoutPanelSelf.TabIndex = 8;
             // 
             // flowLayoutPanelSelfCaptures
             // 
             flowLayoutPanelSelfCaptures.Dock = DockStyle.Fill;
-            flowLayoutPanelSelfCaptures.Location = new Point(0, 30);
+            flowLayoutPanelSelfCaptures.Location = new Point(0, 20);
             flowLayoutPanelSelfCaptures.Margin = new Padding(0);
             flowLayoutPanelSelfCaptures.Name = "flowLayoutPanelSelfCaptures";
-            flowLayoutPanelSelfCaptures.Size = new Size(194, 12);
+            flowLayoutPanelSelfCaptures.Size = new Size(174, 22);
             flowLayoutPanelSelfCaptures.TabIndex = 4;
             flowLayoutPanelSelfCaptures.WrapContents = false;
             // 
@@ -251,23 +270,9 @@ namespace MIN.Chess.Client.Forms
             selfRoleName.ForeColor = Color.White;
             selfRoleName.Location = new Point(3, 0);
             selfRoleName.Name = "selfRoleName";
-            selfRoleName.Size = new Size(104, 21);
+            selfRoleName.Size = new Size(104, 20);
             selfRoleName.TabIndex = 1;
             selfRoleName.Text = "Загрузка . . .";
-            // 
-            // restartQuote
-            // 
-            restartQuote.Anchor = AnchorStyles.Bottom;
-            restartQuote.AutoSize = true;
-            restartQuote.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            restartQuote.ForeColor = Color.White;
-            restartQuote.Location = new Point(825, 510);
-            restartQuote.Name = "restartQuote";
-            restartQuote.Size = new Size(118, 21);
-            restartQuote.TabIndex = 9;
-            restartQuote.Text = "Рестарт? (1/2)";
-            restartQuote.Visible = false;
-            restartQuote.Click += restartQuote_Click;
             // 
             // changeRoleButton
             // 
@@ -278,14 +283,55 @@ namespace MIN.Chess.Client.Forms
             changeRoleButton.FlatStyle = FlatStyle.Flat;
             changeRoleButton.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
             changeRoleButton.ForeColor = Color.FromArgb(167, 157, 255);
-            changeRoleButton.Location = new Point(787, 51);
+            changeRoleButton.Location = new Point(807, 51);
             changeRoleButton.Name = "changeRoleButton";
-            changeRoleButton.Size = new Size(194, 42);
+            changeRoleButton.Size = new Size(174, 42);
             changeRoleButton.TabIndex = 11;
             changeRoleButton.Text = "Войти в игру";
             changeRoleButton.UseVisualStyleBackColor = false;
             changeRoleButton.Visible = false;
             changeRoleButton.Click += changeRoleButton_Click;
+            // 
+            // flowLayoutPanelVotes
+            // 
+            flowLayoutPanelVotes.Controls.Add(restartQuote);
+            flowLayoutPanelVotes.Controls.Add(drawQuote);
+            flowLayoutPanelVotes.Dock = DockStyle.Fill;
+            flowLayoutPanelVotes.FlowDirection = FlowDirection.BottomUp;
+            flowLayoutPanelVotes.Location = new Point(804, 483);
+            flowLayoutPanelVotes.Margin = new Padding(0);
+            flowLayoutPanelVotes.Name = "flowLayoutPanelVotes";
+            flowLayoutPanelVotes.Size = new Size(180, 48);
+            flowLayoutPanelVotes.TabIndex = 12;
+            // 
+            // restartQuote
+            // 
+            restartQuote.Anchor = AnchorStyles.Bottom;
+            restartQuote.AutoSize = true;
+            restartQuote.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            restartQuote.ForeColor = Color.White;
+            restartQuote.Location = new Point(3, 27);
+            restartQuote.Name = "restartQuote";
+            restartQuote.Size = new Size(118, 21);
+            restartQuote.TabIndex = 9;
+            restartQuote.Text = "Рестарт? (1/2)";
+            restartQuote.TextAlign = ContentAlignment.MiddleLeft;
+            restartQuote.Visible = false;
+            restartQuote.Click += restartQuote_Click;
+            // 
+            // drawQuote
+            // 
+            drawQuote.Anchor = AnchorStyles.Bottom;
+            drawQuote.AutoSize = true;
+            drawQuote.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            drawQuote.ForeColor = Color.White;
+            drawQuote.Location = new Point(8, 6);
+            drawQuote.Name = "drawQuote";
+            drawQuote.Size = new Size(108, 21);
+            drawQuote.TabIndex = 10;
+            drawQuote.Text = "Ничья? (1/2)";
+            drawQuote.TextAlign = ContentAlignment.MiddleLeft;
+            drawQuote.Visible = false;
             // 
             // MainForm
             // 
@@ -312,6 +358,8 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanelOpponent.PerformLayout();
             tableLayoutPanelSelf.ResumeLayout(false);
             tableLayoutPanelSelf.PerformLayout();
+            flowLayoutPanelVotes.ResumeLayout(false);
+            flowLayoutPanelVotes.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -334,5 +382,8 @@ namespace MIN.Chess.Client.Forms
         private Components.Labels.Heading3Label restartQuote;
         private Components.Labels.Heading3Label settingsTitle;
         private Components.Buttons.InvertedButton changeRoleButton;
+        private Button drawButton;
+        private FlowLayoutPanel flowLayoutPanelVotes;
+        private Components.Labels.Heading3Label drawQuote;
     }
 }

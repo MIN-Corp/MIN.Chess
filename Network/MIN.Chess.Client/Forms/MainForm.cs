@@ -62,10 +62,8 @@ public partial class MainForm : Form
         InitializeComponent();
 
         resignButton.BackColor = Color.Black;
+        drawButton.BackColor = Color.Black;
         pauseButton.BackColor = Color.Black;
-
-        mainPanel.BackgroundImage = Properties.Resources.Board;
-        mainPanel.BackgroundImageLayout = ImageLayout.Zoom;
 
         CalculateCellRectangles();
         InitializeNetworking(connectionString);
@@ -109,13 +107,14 @@ public partial class MainForm : Form
             });
             return;
         }
-        _ = HandleMessage(message);
+        await HandleMessage(message);
     }
 
     private async Task HandleMessage(INetworkMessage message)
     {
         if (gameState == null && (message is not InitResponseMessage))
         {
+            MessageBox.Show($"Got other message rather then init: {message.GetType()}");
             return;
         }
 
@@ -125,13 +124,6 @@ public partial class MainForm : Form
                 var firstUpdate = gameState == null;
 
                 gameState = new GameState(Board.FromStateString(initResponseMessage.StateString), initResponseMessage.CurrentTurn);
-
-                if (firstUpdate)
-                {
-                    mainPanel.Paint += MainPanel_Paint;
-                    mainPanel.MouseClick += MainPanel_MouseClick;
-                    mainPanel.Resize += (_, _) => CalculateCellRectangles();
-                }
 
                 lastMove = initResponseMessage.LastMove != null
                     ? MoveParser.Parse(initResponseMessage.LastMove, gameState.Board)
@@ -143,18 +135,34 @@ public partial class MainForm : Form
                 players = initResponseMessage.ActivePlayers.ToDictionary();
                 spectatorsCount = initResponseMessage.SpectorsCount;
 
-                UpdatePlayersInfo();
+                uiContext.Post(_ =>
+                {
+                    if (firstUpdate)
+                    {
+                        mainPanel.Paint += MainPanel_Paint;
+                        mainPanel.MouseClick += MainPanel_MouseClick;
+                        mainPanel.Resize += (_, _) => CalculateCellRectangles();
 
-                CalculateCellRectangles();
+                        mainPanel.BackgroundImage = role == Player.Black
+                            ? Properties.Resources.BoardReversed
+                            : Properties.Resources.Board;
+                        mainPanel.BackgroundImageLayout = ImageLayout.Zoom;
+                    }
 
-                moveCache.Clear();
-                mainPanel.Invalidate();
+                    ColorCurrentTurn();
+                    UpdatePlayersInfo();
+                    CalculateCellRectangles();
+
+                    moveCache.Clear();
+                    mainPanel.Invalidate();
+                }, this);
                 break;
 
             case StateUpdateMessage stateUpdateMessage:
                 gameState!.Board = Board.FromStateString(stateUpdateMessage.StateString);
                 gameState.CurrentPlayer = stateUpdateMessage.CurrentTurn;
 
+                ColorCurrentTurn();
                 CountPiecesCapturesForSelfAndOpponent();
 
                 lastMove = stateUpdateMessage.LastMove != null
@@ -166,14 +174,10 @@ public partial class MainForm : Form
                 break;
 
             case MoveUpdateMessage moveUpdateMessage:
-                if (lastMoveUci == moveUpdateMessage.MoveUci)
-                {
-                    return;
-                }
-
                 var move = MoveParser.Parse(moveUpdateMessage.MoveUci, gameState!.Board);
 
                 gameState.MakeMove(move);
+                ColorCurrentTurn();
                 lastMove = move;
 
                 CountPiecesCapturesForSelfAndOpponent();
@@ -186,18 +190,29 @@ public partial class MainForm : Form
                 gameState?.CurrentPlayer = Player.None;
                 uiContext.Post(_ =>
                 {
+                    drawQuote.Visible = false;
                     ShowGameOver(gameResultMessage.Result, gameState!.CurrentPlayer);
                 }, this);
                 break;
 
             case ErrorMessage errorMessage:
-                MessageBox.Show(errorMessage.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                uiContext.Post(_ =>
+                {
+                    MessageBox.Show(errorMessage.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }, this);
                 break;
 
             case RestartVoteMessage restartVoteMessage:
                 var wasAboveZero = restartVote > 0;
                 restartVote = restartVoteMessage.CurrentVotes;
-                UpdateVoteAndPlayersForMenu(wasAboveZero);
+                uiContext.Post(_ =>
+                {
+                    UpdateVoteAndPlayersForMenu(wasAboveZero);
+                }, this);
+                break;
+
+            case DrawVoteMessage drawVoteMessage:
+                drawQuote.Visible = drawVoteMessage.CurrentVotes > 0;
                 break;
 
             case PlayerConnectedMessage playerConnectedMessage:
@@ -241,8 +256,68 @@ public partial class MainForm : Form
         }
     }
 
+    private void ColorCurrentTurn()
+    {
+        if (role!.Value == Player.Black)
+        {
+            if (gameState?.CurrentPlayer == Player.White)
+            {
+                PaintUpTurn();
+            }
+            else if (gameState?.CurrentPlayer == Player.Black)
+            {
+                PaintDownTurn();
+            }
+            else
+            {
+                PaintNoneTurn();
+            }
+        }
+        else
+        {
+            if (gameState?.CurrentPlayer == Player.White)
+            {
+                PaintDownTurn();
+            }
+            else if (gameState?.CurrentPlayer == Player.Black)
+            {
+                PaintUpTurn();
+            }
+            else
+            {
+                PaintNoneTurn();
+            }
+        }
+    }
+
+    private void PaintDownTurn()
+    {
+        tableLayoutPanelOpponent.BackColor = Color.Black;
+        opponentName.ForeColor = Color.White;
+        tableLayoutPanelSelf.BackColor = Color.White;
+        selfRoleName.ForeColor = Color.Black;
+    }
+
+    private void PaintUpTurn()
+    {
+        tableLayoutPanelOpponent.BackColor = Color.White;
+        opponentName.ForeColor = Color.Black;
+        tableLayoutPanelSelf.BackColor = Color.Black;
+        selfRoleName.ForeColor = Color.White;
+    }
+
+    private void PaintNoneTurn()
+    {
+        tableLayoutPanelOpponent.BackColor = Color.Black;
+        opponentName.ForeColor = Color.White;
+        tableLayoutPanelSelf.BackColor = Color.Black;
+        selfRoleName.ForeColor = Color.White;
+    }
+
     private void UpdateVoteAndPlayersForMenu(bool wasAboveZero)
     {
+        restartQuote.Visible = restartVote >= 1;
+
         if (wasAboveZero)
         {
             gameOverMenu?.Close();
@@ -250,28 +325,19 @@ public partial class MainForm : Form
             return;
         }
 
-        restartQuote.Visible = restartVote > 1;
-
         gameOverMenu?.UpdateVoteDisplay(restartVote, CountPlayers());
         pauseMenu?.UpdateVoteDisplay(restartVote, CountPlayers());
     }
 
     private void UpdatePlayersInfo()
     {
-        var resultRole = role!.Value;
-
-        if (role!.Value == Player.None)
-        {
-            resultRole = Player.White;
-        }
-
-        players.TryGetValue(resultRole, out var player1);
+        players.TryGetValue(role!.Value == Player.None ? Player.White : role!.Value, out var player1);
 
         selfRoleName.Text = player1 != null
             ? player1.Name
             : "Ожидаем оппонента...";
 
-        players.TryGetValue(resultRole.Opponent(), out var player2);
+        players.TryGetValue((role!.Value == Player.None ? Player.White : role!.Value).Opponent(), out var player2);
 
         opponentName.Text = player2 != null
             ? player2.Name
@@ -504,6 +570,7 @@ public partial class MainForm : Form
             moveCache.Clear();
             mainPanel.Invalidate();
 
+            ColorCurrentTurn();
             CountPiecesCapturesForSelfAndOpponent();
 
             lastMoveUci = move.ToUci();
@@ -568,7 +635,7 @@ public partial class MainForm : Form
     private PictureBox CreatePiecePictureForCapture(Player player, PieceType pieceType)
         => new()
         {
-            Width = flowLayoutPanelSelfCaptures.Height,
+            Width = Convert.ToInt32(flowLayoutPanelSelfCaptures.Height / 1.2),
             Height = flowLayoutPanelSelfCaptures.Height,
             Image = ImageHelper.GetImage(player, pieceType),
             SizeMode = PictureBoxSizeMode.Zoom,
@@ -723,5 +790,15 @@ public partial class MainForm : Form
     private void changeRoleButton_Click(object sender, EventArgs e)
     {
         SendChangeRoleRequest();
+    }
+
+    private async void SendDrawRequest()
+    {
+        await bridge.SendMessage(new DrawRequestMessage(), cancellationToken: appCts.Token);
+    }
+
+    private void drawButton_Click(object sender, EventArgs e)
+    {
+        SendDrawRequest();
     }
 }

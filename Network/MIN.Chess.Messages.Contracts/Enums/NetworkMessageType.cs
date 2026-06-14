@@ -74,4 +74,14 @@ public enum NetworkMessageType : byte
     /// Запрос на смену роли
     /// </summary>
     ChangeRole = 13,
+
+    /// <summary>
+    /// Запрос на ничью
+    /// </summary>
+    DrawRequest = 14,
+
+    /// <summary>
+    /// Голос на ничью
+    /// </summary>
+    DrawVote = 15,
 }

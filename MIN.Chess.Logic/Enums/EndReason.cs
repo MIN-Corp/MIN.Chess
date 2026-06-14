@@ -18,6 +18,11 @@ public enum EndReason
     /// <summary>
     /// Ничья
     /// </summary>
+    Draw,
+
+    /// <summary>
+    /// Нету доступных ходов
+    /// </summary>
     StaleMate,
 
     /// <summary>
