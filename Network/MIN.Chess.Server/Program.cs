@@ -38,8 +38,6 @@ static internal class Program
         { Player.Black, false },
     };
 
-
-
     private const int ConnectionTimeoutMs = 5_000;
 
     // Timers
@@ -215,49 +213,46 @@ static internal class Program
 
         if (timerEnabled)
         {
-            if (timerEnabled)
+            lock (timerLock)
             {
-                lock (timerLock)
+                var now = DateTime.UtcNow;
+
+                if (!gameStarted)
                 {
-                    var now = DateTime.UtcNow;
+                    gameStarted = true;
 
-                    if (!gameStarted)
+                    if (senderRole == Player.White)
                     {
-                        gameStarted = true;
-
-                        if (senderRole == Player.White)
-                        {
-                            whiteRemainingMs = timerInitialMs + timerBonusMs;
-                            blackRemainingMs = timerInitialMs;
-                        }
-                        else
-                        {
-                            blackRemainingMs = timerInitialMs + timerBonusMs;
-                            whiteRemainingMs = timerInitialMs;
-                        }
-
-                        activeTimer = senderRole.Opponent();
-                        turnStartTime = now;
-                        StartTimerTask();
+                        whiteRemainingMs = timerInitialMs + timerBonusMs;
+                        blackRemainingMs = timerInitialMs;
                     }
                     else
                     {
-                        var elapsed = (long)(now - turnStartTime).TotalMilliseconds;
-
-                        if (senderRole == Player.White)
-                        {
-                            whiteRemainingMs = Math.Max(0, whiteRemainingMs - elapsed);
-                            whiteRemainingMs += timerBonusMs;
-                        }
-                        else
-                        {
-                            blackRemainingMs = Math.Max(0, blackRemainingMs - elapsed);
-                            blackRemainingMs += timerBonusMs;
-                        }
-
-                        activeTimer = senderRole.Opponent();
-                        turnStartTime = now;
+                        blackRemainingMs = timerInitialMs + timerBonusMs;
+                        whiteRemainingMs = timerInitialMs;
                     }
+
+                    activeTimer = senderRole.Opponent();
+                    turnStartTime = now;
+                    StartTimerTask();
+                }
+                else
+                {
+                    var elapsed = (long)(now - turnStartTime).TotalMilliseconds;
+
+                    if (senderRole == Player.White)
+                    {
+                        whiteRemainingMs = Math.Max(0, whiteRemainingMs - elapsed);
+                        whiteRemainingMs += timerBonusMs;
+                    }
+                    else
+                    {
+                        blackRemainingMs = Math.Max(0, blackRemainingMs - elapsed);
+                        blackRemainingMs += timerBonusMs;
+                    }
+
+                    activeTimer = senderRole.Opponent();
+                    turnStartTime = now;
                 }
             }
         }
@@ -464,7 +459,7 @@ static internal class Program
         var senderId = Guid.Parse(gameSettingsMessage.SenderId);
         var role = ResolveRole(senderId);
 
-        Console.WriteLine($"ChangeRole received from {role}");
+        Console.WriteLine($"Settings received from {role}");
 
         if (role != Player.White)
         {
@@ -494,8 +489,15 @@ static internal class Program
         timerEnabled = gameSettingsMessage.TimerInitialMinutes.HasValue;
         timerInitialMs = (gameSettingsMessage.TimerInitialMinutes ?? 0) * 60 * 1000;
         timerBonusMs = gameSettingsMessage.TimerBonusSeconds * 1000;
+        whiteRemainingMs = timerInitialMs;
+        blackRemainingMs = timerInitialMs;
 
         Console.WriteLine($"Timer settings stored: enabled={timerEnabled}, initial={timerInitialMs}ms, bonus={timerBonusMs}ms");
+
+        if (IsBothPlayersJoined())
+        {
+            await SendStateUpdate();
+        }
     }
 
     private static void StartTimerTask()
@@ -642,6 +644,7 @@ static internal class Program
         {
             gameState.Board = Board.Initial();
             gameState.CurrentPlayer = Player.White;
+            timerEnabled = false;
 
             await SendStateUpdate();
         }
@@ -748,8 +751,9 @@ static internal class Program
             LastMove = lastMove?.ToUci(),
             ActivePlayers = players,
             SpectorsCount = spectators.Count,
-            TimerInitialMinutes = timerEnabled ? timerInitialMs / 60000 : null,
-            TimerBonusSeconds = timerBonusMs / 1000,
+            WhiteMs = timerEnabled ? whiteMs : null,
+            BlackMs = timerEnabled ? blackMs : null,
+            TimerBonusSeconds = timerBonusMs / 1000
         };
 
         await bridge.SendMessage(initResponse, RecipientId: participant.Id, cancellationToken: appCts.Token);
@@ -758,6 +762,7 @@ static internal class Program
     private static async Task SendStateUpdate(Guid? broadcastExcludeId = null)
     {
         var (whiteMs, blackMs) = GetCurrentRemainingMs();
+        Console.WriteLine($"Sending state update: whiteMs={whiteMs}ms, blackMs={blackMs}ms");
 
         await bridge.SendMessage(new StateUpdateMessage()
         {
@@ -766,6 +771,7 @@ static internal class Program
             LastMove = null,
             WhiteMs = timerEnabled ? whiteMs : null,
             BlackMs = timerEnabled ? blackMs : null,
+            TimerBonusSeconds = timerBonusMs / 1000
         }, BroadcastExcludeIds: GetDefaultExcludeBroadcastListWith(broadcastExcludeId), cancellationToken: appCts.Token);
     }
 

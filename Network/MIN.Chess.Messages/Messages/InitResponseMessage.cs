@@ -47,15 +47,23 @@ public record InitResponseMessage : BaseNetworkMessage
     public string? LastMove { get; init; }
 
     /// <summary>
-    /// Начальное значение таймера
+    /// Время белого игрока
     /// </summary>
     /// <remarks>
-    /// null если без таймера
+    /// null если игра без таймера
     /// </remarks>
-    public int? TimerInitialMinutes { get; init; }
+    public long? WhiteMs { get; init; }
 
     /// <summary>
-    /// Добавка по времени
+    /// Время чёрного игрока
+    /// </summary>
+    /// <remarks>
+    /// null если игра без таймера
+    /// </remarks>
+    public long? BlackMs { get; init; }
+
+    /// <summary>
+    /// Дополнительное время
     /// </summary>
     public int TimerBonusSeconds { get; init; }
 }

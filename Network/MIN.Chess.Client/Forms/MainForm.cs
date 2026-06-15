@@ -45,7 +45,6 @@ public partial class MainForm : Form
     private Rectangle[,] cellRectangles = null!;
     private Move? pendingPromotionMove;
     private Move? lastMove;
-    private string? lastMoveUci;
     private int spectatorsCount;
     private int restartVote;
 
@@ -58,6 +57,7 @@ public partial class MainForm : Form
 
     private long whiteMs;
     private long blackMs;
+    private int timerBonusMs;
     private bool timerEnabled;
     private DateTime lastTimerSync;
     private Player? activeTimer;
@@ -81,6 +81,9 @@ public partial class MainForm : Form
 
         timerTrackBar.Maximum = timerMinutes.Length - 1;
         bonusTrackBar.Maximum = bonusSeconds.Length - 1;
+
+        UpdateTimerChoosingDisplay();
+        UpdateBonusChoosingDisplay();
 
         CalculateCellRectangles();
         InitializeNetworking(connectionString);
@@ -152,6 +155,9 @@ public partial class MainForm : Form
                 players = initResponseMessage.ActivePlayers.ToDictionary();
                 spectatorsCount = initResponseMessage.SpectorsCount;
 
+                timerBonusMs = initResponseMessage.TimerBonusSeconds * 1000;
+                timerEnabled = initResponseMessage.WhiteMs.HasValue;
+
                 uiContext.Post(_ =>
                 {
                     if (firstUpdate)
@@ -166,6 +172,7 @@ public partial class MainForm : Form
                         mainPanel.BackgroundImageLayout = ImageLayout.Zoom;
                     }
 
+                    SyncTimerValues(initResponseMessage.WhiteMs, initResponseMessage.BlackMs, gameState.CurrentPlayer);
                     ColorCurrentTurn();
                     UpdatePlayersInfo();
                     CalculateCellRectangles();
@@ -178,6 +185,8 @@ public partial class MainForm : Form
             case StateUpdateMessage stateUpdateMessage:
                 gameState!.Board = Board.FromStateString(stateUpdateMessage.StateString);
                 gameState.CurrentPlayer = stateUpdateMessage.CurrentTurn;
+                timerEnabled = stateUpdateMessage.WhiteMs.HasValue;
+                timerBonusMs = stateUpdateMessage.TimerBonusSeconds * 1000;
 
                 lastMove = stateUpdateMessage.LastMove != null
                     ? MoveParser.Parse(stateUpdateMessage.LastMove, gameState.Board)
@@ -185,7 +194,7 @@ public partial class MainForm : Form
 
                 ColorCurrentTurn();
                 CountPiecesCapturesForSelfAndOpponent();
-                SyncTimerValues(stateUpdateMessage.WhiteMs, stateUpdateMessage.BlackMs, stateUpdateMessage.CurrentTurn);
+                SyncTimerValues(stateUpdateMessage.WhiteMs, stateUpdateMessage.BlackMs, gameState.CurrentPlayer);
 
                 moveCache.Clear();
                 mainPanel.Invalidate();
@@ -193,6 +202,7 @@ public partial class MainForm : Form
 
             case MoveUpdateMessage moveUpdateMessage:
                 var move = MoveParser.Parse(moveUpdateMessage.MoveUci, gameState!.Board);
+                timerEnabled = moveUpdateMessage.WhiteMs.HasValue;
 
                 gameState.MakeMove(move);
                 ColorCurrentTurn();
@@ -309,9 +319,12 @@ public partial class MainForm : Form
             }
         }
 
+        var hasRightToChangeSettings = role!.Value == Player.White && !IsGameOn;
+
         tableLayoutPanelButtons.Visible = role!.Value != Player.None && IsGameOn;
-        flowLayoutPanelSettings.Visible = role!.Value == Player.White && !IsGameOn;
-        settingsTitle.Visible = role!.Value == Player.White && !IsGameOn;
+        flowLayoutPanelSettings.Visible = hasRightToChangeSettings;
+        settingsTitle.Visible = hasRightToChangeSettings;
+        buttonSaveSettings.Visible = hasRightToChangeSettings;
     }
 
     private void PaintDownTurn()
@@ -320,6 +333,8 @@ public partial class MainForm : Form
         opponentName.ForeColor = Color.White;
         tableLayoutPanelSelf.BackColor = Color.White;
         selfRoleName.ForeColor = Color.Black;
+        opponentTimerLabel.ForeColor = Color.White;
+        selfTimerLabel.ForeColor = Color.Black;
     }
 
     private void PaintUpTurn()
@@ -328,6 +343,8 @@ public partial class MainForm : Form
         opponentName.ForeColor = Color.Black;
         tableLayoutPanelSelf.BackColor = Color.Black;
         selfRoleName.ForeColor = Color.White;
+        opponentTimerLabel.ForeColor = Color.Black;
+        selfTimerLabel.ForeColor = Color.White;
     }
 
     private void PaintNoneTurn()
@@ -336,6 +353,8 @@ public partial class MainForm : Form
         opponentName.ForeColor = Color.White;
         tableLayoutPanelSelf.BackColor = Color.Black;
         selfRoleName.ForeColor = Color.White;
+        opponentTimerLabel.ForeColor = Color.White;
+        selfTimerLabel.ForeColor = Color.White;
     }
 
     private void UpdateVoteAndPlayersForMenu(bool wasAboveZero)
@@ -589,6 +608,7 @@ public partial class MainForm : Form
 
         try
         {
+            var elapsed = IsGameOn ? (long)(DateTime.UtcNow - lastTimerSync).TotalMilliseconds : 0;
             gameState.MakeMove(move);
 
             lastMove = move;
@@ -596,14 +616,22 @@ public partial class MainForm : Form
             moveCache.Clear();
             mainPanel.Invalidate();
 
+            if (role == Player.White)
+            {
+                whiteMs = Math.Max(0, whiteMs - elapsed) + timerBonusMs;
+            }
+            else
+            {
+                blackMs = Math.Max(0, blackMs - elapsed) + timerBonusMs;
+            }
+
+            SyncTimerValues(timerEnabled ? whiteMs : null, blackMs, gameState.CurrentPlayer);
             ColorCurrentTurn();
             CountPiecesCapturesForSelfAndOpponent();
 
-            lastMoveUci = move.ToUci();
-
             var message = new MoveRequestMessage()
             {
-                MoveUciNotation = lastMoveUci,
+                MoveUciNotation = move.ToUci(),
             };
 
             await bridge.SendMessage(message, cancellationToken: appCts.Token);
@@ -802,19 +830,23 @@ public partial class MainForm : Form
 
     private void UpdateBonusChoosingDisplay()
     {
-        timerBonusValueLabel.Text = $"+{timerMinutes[bonusIndex]} сек";
+        timerBonusValueLabel.Text = $"+{bonusSeconds[bonusIndex]} сек";
     }
 
-    private void SyncTimerValues(long? white, long? black, Player? currentTurn)
+    private void SyncTimerValues(long? white, long? black, Player currentTurn)
     {
-        if (!white.HasValue)
+        if (!white.HasValue || !IsGameOn)
         {
-            timerEnabled = false;
             countdownTimer?.Stop();
+            if (white.HasValue)
+            {
+                whiteMs = white.Value;
+                blackMs = black == null ? 0 : black.Value;
+            }
+            UpdateTimersToInitial(white, black);
             return;
         }
 
-        timerEnabled = true;
         whiteMs = white.Value;
         blackMs = black == null ? 0 : black.Value;
         lastTimerSync = DateTime.UtcNow;
@@ -834,27 +866,37 @@ public partial class MainForm : Form
         UpdateTimerDisplay();
     }
 
+    private void UpdateTimersToInitial(long? white, long? black)
+    {
+        if (white.HasValue && black.HasValue)
+        {
+            selfTimerLabel.Text = FormatTime(white.Value);
+            opponentTimerLabel.Text = FormatTime(black.Value);
+        }
+        else
+        {
+            selfTimerLabel.Text = string.Empty;
+            opponentTimerLabel.Text = string.Empty;
+        }
+    }
+
     private void UpdateTimerDisplay()
     {
-        var white = whiteMs;
-        var black = blackMs;
+        var currentWhiteMs = whiteMs;
+        var currentBlackMs = blackMs;
         var elapsed = (long)(DateTime.UtcNow - lastTimerSync).TotalMilliseconds;
 
         if (activeTimer == Player.White && timerEnabled)
         {
-            white = Math.Max(0, white - elapsed);
+            currentWhiteMs = Math.Max(0, currentWhiteMs - elapsed);
         }
         else if (activeTimer == Player.Black && timerEnabled)
         {
-            black = Math.Max(0, black - elapsed);
+            currentBlackMs = Math.Max(0, currentBlackMs - elapsed);
         }
 
-        selfTimerLabel.Text = FormatTime(white);
-        opponentTimerLabel.Text = FormatTime(black);
-
-        var isWhite = role == Player.White;
-        selfTimerLabel.ForeColor = activeTimer == role ? Color.LimeGreen : Color.Gray;
-        opponentTimerLabel.ForeColor = activeTimer == role?.Opponent() ? Color.LimeGreen : Color.Gray;
+        selfTimerLabel.Text = role == Player.White ? FormatTime(currentWhiteMs) : FormatTime(currentBlackMs);
+        opponentTimerLabel.Text = role == Player.White ? FormatTime(currentBlackMs) : FormatTime(currentWhiteMs);
     }
 
     private static string FormatTime(long ms)

@@ -271,9 +271,9 @@ namespace MIN.Chess.Client.Forms
             opponentTimerLabel.ForeColor = Color.White;
             opponentTimerLabel.Location = new Point(130, -1);
             opponentTimerLabel.Name = "opponentTimerLabel";
-            opponentTimerLabel.Size = new Size(41, 21);
+            opponentTimerLabel.Size = new Size(38, 21);
             opponentTimerLabel.TabIndex = 3;
-            opponentTimerLabel.Text = "0:00";
+            opponentTimerLabel.Text = "--:--";
             // 
             // opponentName
             // 
@@ -317,9 +317,9 @@ namespace MIN.Chess.Client.Forms
             selfTimerLabel.ForeColor = Color.White;
             selfTimerLabel.Location = new Point(130, -3);
             selfTimerLabel.Name = "selfTimerLabel";
-            selfTimerLabel.Size = new Size(41, 21);
+            selfTimerLabel.Size = new Size(38, 21);
             selfTimerLabel.TabIndex = 3;
-            selfTimerLabel.Text = "0:00";
+            selfTimerLabel.Text = "--:--";
             // 
             // selfRoleName
             // 
@@ -430,20 +430,19 @@ namespace MIN.Chess.Client.Forms
             timerTrackBar.Name = "timerTrackBar";
             timerTrackBar.Size = new Size(168, 45);
             timerTrackBar.TabIndex = 15;
-            timerTrackBar.Value = 1;
             timerTrackBar.ValueChanged += timerTrackBar_ValueChanged;
             // 
             // timerValueLabel
             // 
             timerValueLabel.Anchor = AnchorStyles.Top;
-            timerValueLabel.AutoSize = true;
-            timerValueLabel.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            timerValueLabel.Font = new Font("Segoe UI", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 204);
             timerValueLabel.ForeColor = Color.White;
-            timerValueLabel.Location = new Point(69, 31);
+            timerValueLabel.Location = new Point(42, 30);
             timerValueLabel.Name = "timerValueLabel";
-            timerValueLabel.Size = new Size(16, 21);
+            timerValueLabel.Size = new Size(87, 21);
             timerValueLabel.TabIndex = 14;
             timerValueLabel.Text = "-";
+            timerValueLabel.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // buttonTimerPrevious
             // 
@@ -502,20 +501,19 @@ namespace MIN.Chess.Client.Forms
             bonusTrackBar.Name = "bonusTrackBar";
             bonusTrackBar.Size = new Size(168, 45);
             bonusTrackBar.TabIndex = 16;
-            bonusTrackBar.Value = 1;
             bonusTrackBar.ValueChanged += bonusTrackBar_ValueChanged;
             // 
             // timerBonusValueLabel
             // 
             timerBonusValueLabel.Anchor = AnchorStyles.Top;
-            timerBonusValueLabel.AutoSize = true;
             timerBonusValueLabel.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             timerBonusValueLabel.ForeColor = Color.White;
-            timerBonusValueLabel.Location = new Point(69, 31);
+            timerBonusValueLabel.Location = new Point(42, 31);
             timerBonusValueLabel.Name = "timerBonusValueLabel";
-            timerBonusValueLabel.Size = new Size(19, 21);
+            timerBonusValueLabel.Size = new Size(87, 21);
             timerBonusValueLabel.TabIndex = 14;
             timerBonusValueLabel.Text = "0";
+            timerBonusValueLabel.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // buttonBonusPrevious
             // 

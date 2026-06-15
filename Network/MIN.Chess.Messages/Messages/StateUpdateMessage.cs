@@ -40,4 +40,9 @@ public record StateUpdateMessage : BaseNetworkMessage
     /// null если игра без таймера
     /// </remarks>
     public long? BlackMs { get; init; }
+
+    /// <summary>
+    /// Дополнительное время
+    /// </summary>
+    public int TimerBonusSeconds { get; init; }
 }
