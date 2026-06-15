@@ -3,7 +3,7 @@
     <Project Path="Network/MIN.Chess.Client/MIN.Chess.Client.csproj" Id="a6d2d5c1-5877-407d-bef0-58656375ed48" />
     <Project Path="Network/MIN.Chess.Messages.Contracts/MIN.Chess.Messages.Contracts.csproj" Id="fb79e17a-0755-4999-9a6e-4cc11c22344d" />
     <Project Path="Network/MIN.Chess.Messages/MIN.Chess.Messages.csproj" Id="bf4934b5-a601-40ff-89cf-8cf082c4ec32" />
-    <Project Path="Network/MIN.Chess.Server/MIN.Chess.Server.csproj" Id="4616bc42-338a-49fc-99f1-31d213aea6a2" />
+    <Project Path="Network/MIN.Chess.Server/MIN.Chess.Server.csproj" Id="844bdcbf-a3b3-4c44-b85d-19cf5d88ded3" />
   </Folder>
   <Folder Name="/Network/Ipc/" />
   <Folder Name="/Network/Ipc/Messaging/">
