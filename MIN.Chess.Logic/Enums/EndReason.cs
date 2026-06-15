@@ -16,6 +16,11 @@ public enum EndReason
     Resign,
 
     /// <summary>
+    /// Вышло время
+    /// </summary>
+    Timeout,
+
+    /// <summary>
     /// Ничья
     /// </summary>
     Draw,

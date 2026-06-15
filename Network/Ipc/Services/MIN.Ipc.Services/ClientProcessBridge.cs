@@ -39,6 +39,7 @@ public class ClientProcessBridge : IClientProcessBridge
     private async void OnTransportMessage(object? sender, ProcessClientTransportMessageEventArgs e)
     {
         var envelope = JsonSerializer.Deserialize<IpcMinMessageEnvelope>(e.Data);
+
         if (envelope == null)
         {
             return;

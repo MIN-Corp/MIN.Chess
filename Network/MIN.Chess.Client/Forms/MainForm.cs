@@ -49,6 +49,20 @@ public partial class MainForm : Form
     private int spectatorsCount;
     private int restartVote;
 
+    // Timer
+    private readonly static int?[] timerMinutes = [null, 1, 3, 5, 10, 30];
+    private readonly static int[] bonusSeconds = [0, 1, 2, 3, 5, 10, 20];
+
+    private int timerIndex;
+    private int bonusIndex;
+
+    private long whiteMs;
+    private long blackMs;
+    private bool timerEnabled;
+    private DateTime lastTimerSync;
+    private Player? activeTimer;
+    private System.Windows.Forms.Timer? countdownTimer;
+
     private bool IsGameOn => lastMove != null;
 
     /// <summary>
@@ -64,6 +78,9 @@ public partial class MainForm : Form
         resignButton.BackColor = Color.Black;
         drawButton.BackColor = Color.Black;
         pauseButton.BackColor = Color.Black;
+
+        timerTrackBar.Maximum = timerMinutes.Length - 1;
+        bonusTrackBar.Maximum = bonusSeconds.Length - 1;
 
         CalculateCellRectangles();
         InitializeNetworking(connectionString);
@@ -162,12 +179,13 @@ public partial class MainForm : Form
                 gameState!.Board = Board.FromStateString(stateUpdateMessage.StateString);
                 gameState.CurrentPlayer = stateUpdateMessage.CurrentTurn;
 
-                ColorCurrentTurn();
-                CountPiecesCapturesForSelfAndOpponent();
-
                 lastMove = stateUpdateMessage.LastMove != null
                     ? MoveParser.Parse(stateUpdateMessage.LastMove, gameState.Board)
                     : null;
+
+                ColorCurrentTurn();
+                CountPiecesCapturesForSelfAndOpponent();
+                SyncTimerValues(stateUpdateMessage.WhiteMs, stateUpdateMessage.BlackMs, stateUpdateMessage.CurrentTurn);
 
                 moveCache.Clear();
                 mainPanel.Invalidate();
@@ -180,6 +198,7 @@ public partial class MainForm : Form
                 ColorCurrentTurn();
                 lastMove = move;
 
+                SyncTimerValues(moveUpdateMessage.WhiteMs, moveUpdateMessage.BlackMs, gameState.CurrentPlayer);
                 CountPiecesCapturesForSelfAndOpponent();
 
                 moveCache.Clear();
@@ -188,6 +207,7 @@ public partial class MainForm : Form
 
             case GameResultMessage gameResultMessage:
                 gameState?.CurrentPlayer = Player.None;
+                countdownTimer?.Stop();
                 uiContext.Post(_ =>
                 {
                     drawQuote.Visible = false;
@@ -288,6 +308,10 @@ public partial class MainForm : Form
                 PaintNoneTurn();
             }
         }
+
+        tableLayoutPanelButtons.Visible = role!.Value != Player.None && IsGameOn;
+        flowLayoutPanelSettings.Visible = role!.Value == Player.White && !IsGameOn;
+        settingsTitle.Visible = role!.Value == Player.White && !IsGameOn;
     }
 
     private void PaintDownTurn()
@@ -345,6 +369,8 @@ public partial class MainForm : Form
 
         spectatorsCounter.Visible = spectatorsCount > 0;
         spectatorLogo.Visible = spectatorsCount > 0;
+
+        tableLayoutPanelButtons.Visible = (role!.Value != Player.None && IsGameOn);
 
         if (spectatorsCount > 0)
         {
@@ -768,6 +794,77 @@ public partial class MainForm : Form
         }
     }
 
+    private void UpdateTimerChoosingDisplay()
+    {
+        var val = timerMinutes[timerIndex];
+        timerValueLabel.Text = val.HasValue ? $"{val} мин" : "Без таймера";
+    }
+
+    private void UpdateBonusChoosingDisplay()
+    {
+        timerBonusValueLabel.Text = $"+{timerMinutes[bonusIndex]} сек";
+    }
+
+    private void SyncTimerValues(long? white, long? black, Player? currentTurn)
+    {
+        if (!white.HasValue)
+        {
+            timerEnabled = false;
+            countdownTimer?.Stop();
+            return;
+        }
+
+        timerEnabled = true;
+        whiteMs = white.Value;
+        blackMs = black == null ? 0 : black.Value;
+        lastTimerSync = DateTime.UtcNow;
+        activeTimer = currentTurn;
+
+        if (countdownTimer == null)
+        {
+            countdownTimer = new System.Windows.Forms.Timer { Interval = 250 };
+            countdownTimer.Tick += (_, _) => UpdateTimerDisplay();
+            countdownTimer.Start();
+        }
+        else if (!countdownTimer.Enabled)
+        {
+            countdownTimer.Start();
+        }
+
+        UpdateTimerDisplay();
+    }
+
+    private void UpdateTimerDisplay()
+    {
+        var white = whiteMs;
+        var black = blackMs;
+        var elapsed = (long)(DateTime.UtcNow - lastTimerSync).TotalMilliseconds;
+
+        if (activeTimer == Player.White && timerEnabled)
+        {
+            white = Math.Max(0, white - elapsed);
+        }
+        else if (activeTimer == Player.Black && timerEnabled)
+        {
+            black = Math.Max(0, black - elapsed);
+        }
+
+        selfTimerLabel.Text = FormatTime(white);
+        opponentTimerLabel.Text = FormatTime(black);
+
+        var isWhite = role == Player.White;
+        selfTimerLabel.ForeColor = activeTimer == role ? Color.LimeGreen : Color.Gray;
+        opponentTimerLabel.ForeColor = activeTimer == role?.Opponent() ? Color.LimeGreen : Color.Gray;
+    }
+
+    private static string FormatTime(long ms)
+    {
+        var t = TimeSpan.FromMilliseconds(ms);
+        return t.TotalHours >= 1
+            ? $"{(int)t.TotalHours}:{t.Minutes:D2}:{t.Seconds:D2}"
+            : $"{t.Minutes:D2}:{t.Seconds:D2}";
+    }
+
     private void resignButton_Click(object sender, EventArgs e)
     {
         if (!IsGameOn)
@@ -800,5 +897,58 @@ public partial class MainForm : Form
     private void drawButton_Click(object sender, EventArgs e)
     {
         SendDrawRequest();
+    }
+
+    private void timerTrackBar_ValueChanged(object sender, EventArgs e)
+    {
+        timerIndex = timerTrackBar.Value;
+        UpdateTimerChoosingDisplay();
+    }
+
+    private void bonusTrackBar_ValueChanged(object sender, EventArgs e)
+    {
+        bonusIndex = bonusTrackBar.Value;
+        UpdateBonusChoosingDisplay();
+    }
+
+    private void buttonTimerPrevious_Click(object sender, EventArgs e)
+    {
+        timerTrackBar.Value = Math.Max(0, timerTrackBar.Value - 1);
+    }
+
+    private void buttonTimerNext_Click(object sender, EventArgs e)
+    {
+        timerTrackBar.Value = Math.Min(timerMinutes.Length - 1, timerTrackBar.Value + 1);
+    }
+
+    private void buttonBonusPrevious_Click(object sender, EventArgs e)
+    {
+        bonusTrackBar.Value = Math.Max(0, bonusTrackBar.Value - 1);
+    }
+
+    private void buttonBonusNext_Click(object sender, EventArgs e)
+    {
+        bonusTrackBar.Value = Math.Min(bonusSeconds.Length - 1, bonusTrackBar.Value + 1);
+    }
+
+    private async void SendGameSettingsAsync()
+    {
+        try
+        {
+            await bridge.SendMessage(new GameSettingsMessage
+            {
+                TimerInitialMinutes = timerMinutes[timerIndex],
+                TimerBonusSeconds = bonusSeconds[bonusIndex],
+            }, cancellationToken: appCts.Token);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Settings Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void buttonSaveSettings_Click(object sender, EventArgs e)
+    {
+        SendGameSettingsAsync();
     }
 }

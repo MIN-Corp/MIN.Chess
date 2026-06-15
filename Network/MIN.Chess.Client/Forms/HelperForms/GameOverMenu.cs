@@ -66,6 +66,7 @@ public partial class GameOverMenu : Form
     {
         EndReason.CheckMate => $"Мат - {GetPlayerString(currentPlayer)} не может ходить",
         EndReason.Resign => $"{GetPlayerString(result.Winner.Opponent())} сдался",
+        EndReason.Timeout => $"У {GetPlayerString(result.Winner.Opponent())} вышло время",
         EndReason.StaleMate => $"Ничья - {GetPlayerString(currentPlayer)} не может ходить",
         EndReason.Draw => $"Игроки согласились на ничью",
         EndReason.FiftyMoveRule => "Правило пятидесяти ходов",

@@ -45,4 +45,17 @@ public record InitResponseMessage : BaseNetworkMessage
     /// Последний ход (если был)
     /// </summary>
     public string? LastMove { get; init; }
+
+    /// <summary>
+    /// Начальное значение таймера
+    /// </summary>
+    /// <remarks>
+    /// null если без таймера
+    /// </remarks>
+    public int? TimerInitialMinutes { get; init; }
+
+    /// <summary>
+    /// Добавка по времени
+    /// </summary>
+    public int TimerBonusSeconds { get; init; }
 }

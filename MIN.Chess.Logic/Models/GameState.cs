@@ -56,7 +56,7 @@ public class GameState
             return [];
         }
 
-        if (role != null && role != CurrentPlayer && role == Player.None)
+        if (role != null && (role != CurrentPlayer || role == Player.None))
         {
             return [];
         }

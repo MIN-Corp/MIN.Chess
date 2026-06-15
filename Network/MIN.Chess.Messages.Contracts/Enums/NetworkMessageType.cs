@@ -84,4 +84,9 @@ public enum NetworkMessageType : byte
     /// Голос на ничью
     /// </summary>
     DrawVote = 15,
+
+    /// <summary>
+    /// Настройки партии
+    /// </summary>
+    GameSettings = 16,
 }

@@ -18,6 +18,8 @@ static internal class Program
     private readonly static Dictionary<Guid, InitRequestMessage> pendingInits = [];
     private readonly static Dictionary<Guid, Participant> spectators = [];
     private readonly static CancellationTokenSource appCts = new();
+    private readonly static List<int> avaibleTimerValues = [1, 3, 5, 10, 30];
+    private readonly static List<int> avaibleBonusTimerValues = [0, 1, 2, 3, 5, 10, 20];
     private readonly static Dictionary<Player, Participant?> players = new()
     {
         { Player.White, null },
@@ -37,7 +39,22 @@ static internal class Program
     };
 
 
+
     private const int ConnectionTimeoutMs = 5_000;
+
+    // Timers
+    private static long whiteRemainingMs;
+    private static long blackRemainingMs;
+    private static Player? activeTimer;
+    private static DateTime turnStartTime;
+    private static int timerInitialMs;
+    private static int timerBonusMs;
+    private static bool timerEnabled;
+    private static bool gameStarted;
+    private static Task? timerTask;
+    private static CancellationTokenSource? timerCts;
+    private static readonly object timerLock = new();
+    private static bool gameOverResultSent;
 
     private static Move? lastMove;
 
@@ -123,6 +140,10 @@ static internal class Program
             case ChangeRoleRequestMessage _:
                 await HandleChangeRole(message);
                 break;
+
+            case GameSettingsMessage gameSettingsMessage:
+                await HandleGameSettings(gameSettingsMessage);
+                break;
         }
     }
 
@@ -136,9 +157,7 @@ static internal class Program
 
         Console.WriteLine($"ROLE {role}");
 
-        Participant? sender;
-
-        players.TryGetValue(role, out sender);
+        players.TryGetValue(role, out var sender);
 
         if (sender == null)
         {
@@ -168,6 +187,12 @@ static internal class Program
 
     private static async Task HandleMove(MoveRequestMessage moveRequestMessage)
     {
+        if (gameState.IsGameOver())
+        {
+            await SendErrorMessageFor(moveRequestMessage.SenderId, "Игра уже окончена");
+            return;
+        }
+
         Console.WriteLine($"moveRequestMessage received {moveRequestMessage.MoveUciNotation}");
 
         var move = MoveParser.Parse(moveRequestMessage.MoveUciNotation, gameState.Board);
@@ -188,12 +213,65 @@ static internal class Program
             return;
         }
 
+        if (timerEnabled)
+        {
+            if (timerEnabled)
+            {
+                lock (timerLock)
+                {
+                    var now = DateTime.UtcNow;
+
+                    if (!gameStarted)
+                    {
+                        gameStarted = true;
+
+                        if (senderRole == Player.White)
+                        {
+                            whiteRemainingMs = timerInitialMs + timerBonusMs;
+                            blackRemainingMs = timerInitialMs;
+                        }
+                        else
+                        {
+                            blackRemainingMs = timerInitialMs + timerBonusMs;
+                            whiteRemainingMs = timerInitialMs;
+                        }
+
+                        activeTimer = senderRole.Opponent();
+                        turnStartTime = now;
+                        StartTimerTask();
+                    }
+                    else
+                    {
+                        var elapsed = (long)(now - turnStartTime).TotalMilliseconds;
+
+                        if (senderRole == Player.White)
+                        {
+                            whiteRemainingMs = Math.Max(0, whiteRemainingMs - elapsed);
+                            whiteRemainingMs += timerBonusMs;
+                        }
+                        else
+                        {
+                            blackRemainingMs = Math.Max(0, blackRemainingMs - elapsed);
+                            blackRemainingMs += timerBonusMs;
+                        }
+
+                        activeTimer = senderRole.Opponent();
+                        turnStartTime = now;
+                    }
+                }
+            }
+        }
+
         Console.WriteLine("move is legal, sending move update");
+
+        var (whiteMs, blackMs) = GetCurrentRemainingMs();
 
         await bridge.SendMessage(new MoveUpdateMessage()
         {
             MoveUci = moveRequestMessage.MoveUciNotation,
             CurrentPlayer = gameState.CurrentPlayer,
+            WhiteMs = timerEnabled ? whiteMs : null,
+            BlackMs = timerEnabled ? blackMs : null,
         },
         BroadcastExcludeIds: GetDefaultExcludeBroadcastListWith(senderId),
         cancellationToken: appCts.Token);
@@ -261,10 +339,7 @@ static internal class Program
                 votes = 0;
                 drawVote[Player.White] = false;
                 drawVote[Player.Black] = false;
-                await bridge.SendMessage(new GameResultMessage()
-                {
-                    Result = Result.Draw(EndReason.Draw)
-                }, cancellationToken: appCts.Token);
+                await SendGameResult(Result.Draw(EndReason.Draw));
             }
 
             await bridge.SendMessage(new DrawVoteMessage()
@@ -384,6 +459,146 @@ static internal class Program
         }
     }
 
+    private static async Task HandleGameSettings(GameSettingsMessage gameSettingsMessage)
+    {
+        var senderId = Guid.Parse(gameSettingsMessage.SenderId);
+        var role = ResolveRole(senderId);
+
+        Console.WriteLine($"ChangeRole received from {role}");
+
+        if (role != Player.White)
+        {
+            await SendErrorMessageFor(gameSettingsMessage.SenderId, "У вас нету права на это");
+            return;
+        }
+
+        if (gameStarted)
+        {
+            await SendErrorMessageFor(gameSettingsMessage.SenderId, "Настройки можно изменить только до начала игры");
+            return;
+        }
+
+        if (gameSettingsMessage.TimerInitialMinutes != null
+            && !avaibleTimerValues.Contains(gameSettingsMessage.TimerInitialMinutes.Value))
+        {
+            await SendErrorMessageFor(gameSettingsMessage.SenderId, "Время должно находиться в правильном диапазоне");
+            return;
+        }
+
+        if (!avaibleBonusTimerValues.Contains(gameSettingsMessage.TimerBonusSeconds))
+        {
+            await SendErrorMessageFor(gameSettingsMessage.SenderId, "Добавочное время должно находиться в правильном диапазоне");
+            return;
+        }
+
+        timerEnabled = gameSettingsMessage.TimerInitialMinutes.HasValue;
+        timerInitialMs = (gameSettingsMessage.TimerInitialMinutes ?? 0) * 60 * 1000;
+        timerBonusMs = gameSettingsMessage.TimerBonusSeconds * 1000;
+
+        Console.WriteLine($"Timer settings stored: enabled={timerEnabled}, initial={timerInitialMs}ms, bonus={timerBonusMs}ms");
+    }
+
+    private static void StartTimerTask()
+    {
+        if (timerTask != null)
+        {
+            return;
+        }
+        timerCts = CancellationTokenSource.CreateLinkedTokenSource(appCts.Token);
+        timerTask = TimerCheckLoop(timerCts.Token);
+    }
+
+    private static void StopTimer()
+    {
+        timerCts?.Cancel();
+        timerCts?.Dispose();
+        timerCts = null;
+        timerTask = null;
+        activeTimer = null;
+    }
+
+    private static async Task TimerCheckLoop(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(500, ct);
+
+                Player? timeoutLoser = null;
+
+                lock (timerLock)
+                {
+                    if (!timerEnabled || activeTimer == null || gameState.IsGameOver())
+                    {
+                        continue;
+                    }
+
+                    var elapsed = (long)(DateTime.UtcNow - turnStartTime).TotalMilliseconds;
+
+                    if (activeTimer == Player.White && whiteRemainingMs - elapsed <= 0)
+                    {
+                        timeoutLoser = Player.White;
+                    }
+                    else if (activeTimer == Player.Black && blackRemainingMs - elapsed <= 0)
+                    {
+                        timeoutLoser = Player.Black;
+                    }
+                }
+
+                if (timeoutLoser != null)
+                {
+                    Console.WriteLine($"{timeoutLoser} timed out");
+                    var result = new Result(timeoutLoser.Value.Opponent(), EndReason.Timeout);
+                    gameState.Result = result;
+                    await SendGameResult(result);
+                    return;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
+    }
+
+    private static (long whiteMs, long blackMs) GetCurrentRemainingMs()
+    {
+        if (!timerEnabled)
+        {
+            return (0, 0);
+        }
+
+        lock (timerLock)
+        {
+            var white = whiteRemainingMs;
+            var black = blackRemainingMs;
+            var elapsed = (long)(DateTime.UtcNow - turnStartTime).TotalMilliseconds;
+
+            if (activeTimer == Player.White)
+            {
+                white = Math.Max(0, white - elapsed);
+            }
+            else if (activeTimer == Player.Black)
+            {
+                black = Math.Max(0, black - elapsed);
+            }
+
+            return (white, black);
+        }
+    }
+
+    private static async Task SendGameResult(Result result)
+    {
+        if (gameOverResultSent)
+        {
+            return;
+        }
+        gameOverResultSent = true;
+        StopTimer();
+        await bridge.SendMessage(new GameResultMessage() { Result = result }, cancellationToken: appCts.Token);
+    }
+
     private static IEnumerable<Guid>? GetDefaultExcludeBroadcastListWith(Guid? excludeId)
     {
         if (excludeId != null)
@@ -400,6 +615,15 @@ static internal class Program
     {
         gameState.Result = null;
         lastMove = null;
+        gameStarted = false;
+        gameOverResultSent = false;
+
+        if (timerEnabled)
+        {
+            StopTimer();
+            whiteRemainingMs = 0;
+            blackRemainingMs = 0;
+        }
 
         if (players[Player.White] == null)
         {
@@ -455,12 +679,7 @@ static internal class Program
 
             if (pendingInits.Remove(participant.Id, out _))
             {
-                Console.WriteLine($"SENDING INIT RESPONSE TO {participant.Id}");
                 await SendInitResponse(participant);
-            }
-            else
-            {
-                Console.WriteLine($"DIDNT FOUND {participant.Id} IN PENDING, MUST HAVE ALREADY RECEIVED");
             }
 
             return;
@@ -507,12 +726,7 @@ static internal class Program
 
         if (pendingInits.Remove(participant.Id, out _))
         {
-            Console.WriteLine($"SENDING INIT RESPONSE TO {participant.Id}");
             await SendInitResponse(participant);
-        }
-        else
-        {
-            Console.WriteLine($"DIDNT FOUND {participant.Id} IN PENDING, MUST HAVE ALREADY RECEIVED");
         }
 
         if (IsBothPlayersJoined())
@@ -524,6 +738,7 @@ static internal class Program
     private static async Task SendInitResponse(Participant participant)
     {
         var role = ResolveRole(participant.Id);
+        var (whiteMs, blackMs) = GetCurrentRemainingMs();
         var initResponse = new InitResponseMessage
         {
             StateString = new StateString(gameState.CurrentPlayer, gameState.Board).ToString(),
@@ -533,6 +748,8 @@ static internal class Program
             LastMove = lastMove?.ToUci(),
             ActivePlayers = players,
             SpectorsCount = spectators.Count,
+            TimerInitialMinutes = timerEnabled ? timerInitialMs / 60000 : null,
+            TimerBonusSeconds = timerBonusMs / 1000,
         };
 
         await bridge.SendMessage(initResponse, RecipientId: participant.Id, cancellationToken: appCts.Token);
@@ -540,11 +757,15 @@ static internal class Program
 
     private static async Task SendStateUpdate(Guid? broadcastExcludeId = null)
     {
+        var (whiteMs, blackMs) = GetCurrentRemainingMs();
+
         await bridge.SendMessage(new StateUpdateMessage()
         {
             StateString = gameState.ToString(),
             CurrentTurn = gameState.CurrentPlayer,
             LastMove = null,
+            WhiteMs = timerEnabled ? whiteMs : null,
+            BlackMs = timerEnabled ? blackMs : null,
         }, BroadcastExcludeIds: GetDefaultExcludeBroadcastListWith(broadcastExcludeId), cancellationToken: appCts.Token);
     }
 
@@ -561,6 +782,7 @@ static internal class Program
             return;
         }
 
+        StopTimer();
         gameState.CurrentPlayer = Player.None;
 
         if (players[Player.White]?.Id == participantId)

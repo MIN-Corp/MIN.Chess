@@ -24,4 +24,20 @@ public record StateUpdateMessage : BaseNetworkMessage
     /// Последний ход (если был)
     /// </summary>
     public string? LastMove { get; init; }
+
+    /// <summary>
+    /// Время белого игрока
+    /// </summary>
+    /// <remarks>
+    /// null если игра без таймера
+    /// </remarks>
+    public long? WhiteMs { get; init; }
+
+    /// <summary>
+    /// Время чёрного игрока
+    /// </summary>
+    /// <remarks>
+    /// null если игра без таймера
+    /// </remarks>
+    public long? BlackMs { get; init; }
 }
