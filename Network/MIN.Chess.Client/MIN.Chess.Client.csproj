@@ -87,6 +87,18 @@
     <Compile Update="Forms\HelperForms\PromotionMenu.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Forms\MainForm.Handlers.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\MainForm.Timer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\MainForm.Menus.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\MainForm.Rendering.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

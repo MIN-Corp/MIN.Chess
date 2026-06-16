@@ -1,4 +1,5 @@
 using MIN.Chess.Server.Helpers;
+using MIN.Chess.Server.Properties;
 using MIN.Chess.Server.Services;
 
 namespace MIN.Chess.Server.Forms;
@@ -9,6 +10,7 @@ namespace MIN.Chess.Server.Forms;
 public partial class OutputForm : Form, ILoggerProvider
 {
     private readonly string connectionString;
+    private NotifyIcon? trayIcon;
     private GameServerService gameServerService = null!;
 
     /// <summary>
@@ -18,6 +20,27 @@ public partial class OutputForm : Form, ILoggerProvider
     {
         this.connectionString = connectionString;
         InitializeComponent();
+        SetupTrayIcon();
+        WindowState = FormWindowState.Minimized;
+        ShowInTaskbar = false;
+    }
+
+    private void SetupTrayIcon()
+    {
+        trayIcon = new NotifyIcon
+        {
+            Icon = Resources.chesslogo,
+            Text = "Opencode Server",
+            Visible = true
+        };
+
+        var contextMenu = new ContextMenuStrip();
+        contextMenu.Items.Add("Показать логи", null, (s, e) => WindowState = FormWindowState.Normal);
+        contextMenu.Items.Add("-");
+        contextMenu.Items.Add("Закрыть", null, (s, e) => Close());
+
+        trayIcon.ContextMenuStrip = contextMenu;
+        trayIcon.DoubleClick += (s, e) => WindowState = FormWindowState.Normal;
     }
 
     void ILoggerProvider.Log(string message) => log.Items.Add(message);
