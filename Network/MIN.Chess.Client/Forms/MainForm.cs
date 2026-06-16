@@ -57,7 +57,7 @@ public partial class MainForm : Form
 
     private long whiteMs;
     private long blackMs;
-    private int timerBonusMs;
+    private int timerBonusSeconds;
     private bool timerEnabled;
     private DateTime lastTimerSync;
     private Player? activeTimer;
@@ -155,7 +155,7 @@ public partial class MainForm : Form
                 players = initResponseMessage.ActivePlayers.ToDictionary();
                 spectatorsCount = initResponseMessage.SpectorsCount;
 
-                timerBonusMs = initResponseMessage.TimerBonusSeconds * 1000;
+                timerBonusSeconds = initResponseMessage.TimerBonusMs * 1000;
                 timerEnabled = initResponseMessage.WhiteMs.HasValue;
 
                 uiContext.Post(_ =>
@@ -186,7 +186,7 @@ public partial class MainForm : Form
                 gameState!.Board = Board.FromStateString(stateUpdateMessage.StateString);
                 gameState.CurrentPlayer = stateUpdateMessage.CurrentTurn;
                 timerEnabled = stateUpdateMessage.WhiteMs.HasValue;
-                timerBonusMs = stateUpdateMessage.TimerBonusSeconds * 1000;
+                timerBonusSeconds = stateUpdateMessage.TimerBonusSeconds * 1000;
 
                 lastMove = stateUpdateMessage.LastMove != null
                     ? MoveParser.Parse(stateUpdateMessage.LastMove, gameState.Board)
@@ -618,11 +618,11 @@ public partial class MainForm : Form
 
             if (role == Player.White)
             {
-                whiteMs = Math.Max(0, whiteMs - elapsed) + timerBonusMs;
+                whiteMs = Math.Max(0, whiteMs - elapsed) + timerBonusSeconds;
             }
             else
             {
-                blackMs = Math.Max(0, blackMs - elapsed) + timerBonusMs;
+                blackMs = Math.Max(0, blackMs - elapsed) + timerBonusSeconds;
             }
 
             SyncTimerValues(timerEnabled ? whiteMs : null, blackMs, gameState.CurrentPlayer);

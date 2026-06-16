@@ -1,5 +1,5 @@
 ﻿using MIN.Chess.Logic.Enums;
-using MIN.Chess.Logic.Models;
+using MIN.Chess.Logic.Extensions;
 using MIN.Chess.Messages.Messages;
 using MIN.Chess.Server.Helpers;
 using MIN.Ipc.Services.Contracts.Interfaces;
@@ -11,8 +11,9 @@ namespace MIN.Chess.Server.Services;
 /// </summary>
 internal class VoteService
 {
-    private readonly ILoggerProvider logger;
+    private readonly RoomService roomService;
     private readonly MessageService messageService;
+    private readonly ILoggerProvider logger;
     private readonly Dictionary<Player, bool> restartVote = new()
     {
         { Player.White, false },
@@ -25,12 +26,30 @@ internal class VoteService
     };
 
     /// <summary>
+    /// Событие по сдаче игрока
+    /// </summary>
+    public Action<Player>? OnResign;
+
+    /// <summary>
+    /// Событие по наборе голосов на ничью
+    /// </summary>
+    public Action? OnDraw;
+
+    /// <summary>
+    /// Событие по наборе голосов на рестарт
+    /// </summary>
+    public Action? OnRestart;
+
+    /// <summary>
     /// Инициализирует новый экземпляр <see cref="VoteService"/>
     /// </summary>
-    public VoteService(ILoggerProvider logger, MessageService messageService)
+    public VoteService(RoomService roomService,
+        MessageService messageService,
+        ILoggerProvider logger)
     {
-        this.logger = logger;
+        this.roomService = roomService;
         this.messageService = messageService;
+        this.logger = logger;
     }
 
     /// <summary>
@@ -39,7 +58,7 @@ internal class VoteService
     public async Task HandleResign(INetworkMessage message)
     {
         var senderId = Guid.Parse(message.SenderId);
-        var role = ResolveRole(senderId);
+        var role = roomService.ResolveRole(senderId);
 
         logger.Log($"Resign received from {role}");
 
@@ -48,12 +67,8 @@ internal class VoteService
             await messageService.SendErrorAsync(senderId, "У вас нету права на это");
             return;
         }
-        await SendGameResult(new Result(role.Opponent(), EndReason.Resign));
 
-        await messageService.BroadcastExcludingAsync(new GameResultMessage()
-        {
-            Result = new Result(role.Opponent(), EndReason.Resign),
-        });
+        OnResign?.Invoke(role.Opponent());
     }
 
     /// <summary>
@@ -62,7 +77,7 @@ internal class VoteService
     public async Task HandleDraw(INetworkMessage message)
     {
         var senderId = Guid.Parse(message.SenderId);
-        var role = ResolveRole(senderId);
+        var role = roomService.ResolveRole(senderId);
 
         logger.Log($"Draw request received from {role}");
 
@@ -77,7 +92,7 @@ internal class VoteService
             return;
         }
 
-        if (!IsBothPlayersJoined())
+        if (!roomService.IsBothPlayersJoined())
         {
             return;
         }
@@ -90,10 +105,11 @@ internal class VoteService
                 votes = 0;
                 drawVote[Player.White] = false;
                 drawVote[Player.Black] = false;
-                await SendGameResult(Result.Draw(EndReason.Draw));
+
+                OnDraw?.Invoke();
             }
 
-            await messageService.BroadcastExcludingAsync(new DrawVoteMessage()
+            await messageService.BroadcastAsync(new DrawVoteMessage()
             {
                 CurrentVotes = votes
             });
@@ -106,7 +122,7 @@ internal class VoteService
     public async Task HandleRestart(INetworkMessage message)
     {
         var senderId = Guid.Parse(message.SenderId);
-        var role = ResolveRole(senderId);
+        var role = roomService.ResolveRole(senderId);
 
         logger.Log($"Restart received from {role}");
 
@@ -121,7 +137,7 @@ internal class VoteService
             return;
         }
 
-        if (!IsBothPlayersJoined())
+        if (!roomService.IsBothPlayersJoined())
         {
             return;
         }
@@ -131,17 +147,16 @@ internal class VoteService
             restartVote[role] = true;
             if (restartVote[Player.White] && restartVote[Player.Black])
             {
-                await Restart();
+                OnRestart?.Invoke();
                 votes = 0;
                 restartVote[Player.White] = false;
                 restartVote[Player.Black] = false;
             }
 
-            await bridge.SendMessage(new RestartVoteMessage()
+            await messageService.BroadcastAsync(new RestartVoteMessage()
             {
                 CurrentVotes = votes
-            }, cancellationToken: appCts.Token);
+            });
         }
     }
-
 }

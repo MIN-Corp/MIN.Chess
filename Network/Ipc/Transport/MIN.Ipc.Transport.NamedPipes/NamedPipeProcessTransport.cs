@@ -13,6 +13,7 @@ namespace MIN.Ipc.Transport.NamedPipes;
 public sealed class NamedPipeProcessClientTransport : IProcessClientTransport
 {
     private readonly CancellationTokenSource cts = new();
+    private readonly SemaphoreSlim writeLock = new(1, 1);
     private readonly SemaphoreSlim readLock = new(1, 1);
     private NamedPipeClientStream? pipe;
 
@@ -77,9 +78,17 @@ public sealed class NamedPipeProcessClientTransport : IProcessClientTransport
 
     async Task IProcessClientTransport.SendAsync(byte[] data, CancellationToken cancellationToken)
     {
-        await pipe!.WriteAsync(BitConverter.GetBytes(data.Length), cancellationToken);
-        await pipe!.WriteAsync(data, cancellationToken);
-        await pipe!.FlushAsync(cancellationToken);
+        await writeLock.WaitAsync(cancellationToken);
+        try
+        {
+            await pipe!.WriteAsync(BitConverter.GetBytes(data.Length), cancellationToken);
+            await pipe!.WriteAsync(data, cancellationToken);
+            await pipe!.FlushAsync(cancellationToken);
+        }
+        finally
+        {
+            writeLock.Release();
+        }
     }
 
     /// <inheritdoc />

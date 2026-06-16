@@ -65,5 +65,5 @@ public record InitResponseMessage : BaseNetworkMessage
     /// <summary>
     /// Дополнительное время
     /// </summary>
-    public int TimerBonusSeconds { get; init; }
+    public int TimerBonusMs { get; init; }
 }

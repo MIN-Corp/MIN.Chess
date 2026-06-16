@@ -31,10 +31,10 @@ internal class GameServerService
         bridge.RegisterAllFromAnchor<IChessMessagesAnchor>();
 
         messageService = new(bridge, appCts);
-        voteService = new(logger, messageService);
-        gameService = new(logger, bridge);
-        roomService = new(logger, bridge);
-        timerService = new(logger);
+        roomService = new(messageService, logger);
+        voteService = new(roomService, messageService, logger);
+        timerService = new(messageService, roomService, logger, appCts);
+        gameService = new(messageService, roomService, voteService, timerService, logger);
     }
 
     /// <summary>
