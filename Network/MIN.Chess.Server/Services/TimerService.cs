@@ -142,19 +142,17 @@ internal class TimerService
     /// <summary>
     /// Обработать время после хода
     /// </summary>
-    public bool ManageTimeAfterMove(Player role, bool stateGameStarted)
+    public void ManageTimeAfterMove(Player role)
     {
-        var gameStarted = false;
-
         if (TimerEnabled)
         {
             lock (timerLock)
             {
                 var now = DateTime.UtcNow;
 
-                if (!stateGameStarted)
+                if (!GameService.GameStarted)
                 {
-                    gameStarted = true;
+                    GameService.GameStarted = true;
 
                     if (role == Player.White)
                     {
@@ -191,8 +189,6 @@ internal class TimerService
                 }
             }
         }
-
-        return gameStarted;
     }
 
     /// <summary>

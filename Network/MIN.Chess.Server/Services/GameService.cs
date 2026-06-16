@@ -60,12 +60,16 @@ internal class GameService
         {
             if (player != Player.None)
             {
-                timerService.StopTimer();
+                Restart();
                 GameState.CurrentPlayer = Player.None;
             }
         };
 
-        voteService.OnRestart += async () => await Restart();
+        voteService.OnRestart += async () =>
+        {
+            Restart();
+            await ManangeStartGameStateOutOfPlayerPresence();
+        };
         voteService.OnResign += async (winner) =>
         {
             var result = new Result(winner, EndReason.Resign);
@@ -115,7 +119,6 @@ internal class GameService
 
         logger.Log("checking legalability . . .");
 
-
         if (move.IsLegal(GameState.Board) && senderRole == GameState.CurrentPlayer)
         {
             GameState.MakeMove(move);
@@ -127,7 +130,7 @@ internal class GameService
             return;
         }
 
-        GameStarted = timerService.ManageTimeAfterMove(senderRole, GameStarted);
+        timerService.ManageTimeAfterMove(senderRole);
 
         var (whiteMs, blackMs) = timerService.GetCurrentRemainingMs();
 
@@ -173,15 +176,13 @@ internal class GameService
     /// <summary>
     /// Перезапустить игру
     /// </summary>
-    public async Task Restart()
+    public void Restart()
     {
         GameState.Result = null;
         lastMove = null;
         GameStarted = false;
         gameOverResultSent = false;
         timerService.StopTimer();
-
-        await ManangeStartGameStateOutOfPlayerPresence();
     }
 
     private async Task ManangeStartGameStateOutOfPlayerPresence()
@@ -192,7 +193,10 @@ internal class GameService
             GameState.CurrentPlayer = Player.White;
 
             await SendStateUpdate();
+            return;
         }
+
+        Restart();
 
         if (roomService.IsWhitePlayersJoined())
         {

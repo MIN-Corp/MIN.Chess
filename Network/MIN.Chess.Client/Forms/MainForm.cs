@@ -180,6 +180,8 @@ public partial class MainForm : Form
                     moveCache.Clear();
                     mainPanel.Invalidate();
                 }, this);
+
+                await bridge.SendMessage(new PlayerLoadedMessage(), cancellationToken: appCts.Token);
                 break;
 
             case StateUpdateMessage stateUpdateMessage:
@@ -254,7 +256,10 @@ public partial class MainForm : Form
                     if (participant?.Id == playerConnectedMessage.Participant.Id && role!.Value == Player.None)
                     {
                         role = playerConnectedMessage.Role;
+                        ColorCurrentTurn();
                         CalculateCellRectangles();
+                        moveCache.Clear();
+                        mainPanel.Invalidate();
                     }
                 }
                 else
@@ -895,8 +900,8 @@ public partial class MainForm : Form
             currentBlackMs = Math.Max(0, currentBlackMs - elapsed);
         }
 
-        selfTimerLabel.Text = role == Player.White ? FormatTime(currentWhiteMs) : FormatTime(currentBlackMs);
-        opponentTimerLabel.Text = role == Player.White ? FormatTime(currentBlackMs) : FormatTime(currentWhiteMs);
+        selfTimerLabel.Text = role == Player.Black ? FormatTime(currentBlackMs) : FormatTime(currentWhiteMs);
+        opponentTimerLabel.Text = role == Player.Black ? FormatTime(currentWhiteMs) : FormatTime(currentBlackMs);
     }
 
     private static string FormatTime(long ms)

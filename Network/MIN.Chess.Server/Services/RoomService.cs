@@ -13,11 +13,11 @@ internal class RoomService
 {
     private readonly MessageService messageService;
     private readonly ILoggerProvider logger;
-    private readonly Dictionary<Guid, Participant> spectators = [];
 
+    private readonly static Dictionary<Guid, Participant> spectators = [];
+    private readonly static HashSet<Guid> loadedParticipants = [];
     private readonly static Dictionary<Guid, InitRequestMessage> pendingInits = [];
-
-    private readonly Dictionary<Player, Participant?> players = new()
+    private readonly static Dictionary<Player, Participant?> players = new()
     {
         { Player.White, null },
         { Player.Black, null },
@@ -28,11 +28,31 @@ internal class RoomService
     /// </summary>
     public static IEnumerable<Guid> GetBroadcastExcludeList(Guid? excludeId = null)
     {
+        foreach (var id in pendingInits.Keys)
+        {
+            yield return id;
+        }
+
+        foreach (var p in players.Values)
+        {
+            if (p != null && !loadedParticipants.Contains(p.Id))
+            {
+                yield return p.Id;
+            }
+        }
+
+        foreach (var id in spectators.Keys)
+        {
+            if (!loadedParticipants.Contains(id))
+            {
+                yield return id;
+            }
+        }
+
         if (excludeId.HasValue)
         {
-            return pendingInits.Keys.Append(excludeId.Value);
+            yield return excludeId.Value;
         }
-        return pendingInits.Keys;
     }
 
     /// <summary>
@@ -64,11 +84,11 @@ internal class RoomService
     /// </summary>
     public Player ResolveRole(Guid senderId)
     {
-        if (players[Player.White]?.Id == senderId || players[Player.White] == null)
+        if (players[Player.White]?.Id == senderId)
         {
             return Player.White;
         }
-        else if (players[Player.Black]?.Id == senderId || players[Player.Black] == null)
+        else if (players[Player.Black]?.Id == senderId)
         {
             return Player.Black;
         }
@@ -194,6 +214,20 @@ internal class RoomService
     }
 
     /// <summary>
+    /// Обработать загрузку игрока
+    /// </summary>
+    public async Task HandlePlayerLoaded(string senderId)
+    {
+        var id = Guid.Parse(senderId);
+        if (!loadedParticipants.Add(id))
+        {
+            return;
+        }
+
+        logger.Log($"Participant {id} loaded");
+    }
+
+    /// <summary>
     /// Обработать присоединения участника
     /// </summary>
     public async Task HandleParticipantJoining(Participant participant)
@@ -257,6 +291,8 @@ internal class RoomService
     /// </summary>
     public async Task HandleParticipantDisconnecting(Guid participantId)
     {
+        loadedParticipants.Remove(participantId);
+
         if (spectators.ContainsKey(participantId))
         {
             spectators.Remove(participantId);

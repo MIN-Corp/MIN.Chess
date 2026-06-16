@@ -89,4 +89,9 @@ public enum NetworkMessageType : byte
     /// Настройки партии
     /// </summary>
     GameSettings = 16,
+
+    /// <summary>
+    /// Игрок прогрузился, готов принимать данные с сервера
+    /// </summary>
+    PlayerLoaded = 17,
 }

@@ -109,6 +109,10 @@ internal class GameServerService
                 await roomService.HandleChangeRole(message);
                 break;
 
+            case PlayerLoadedMessage _:
+                await roomService.HandlePlayerLoaded(message.SenderId);
+                break;
+
             case GameSettingsMessage gameSettingsMessage:
                 await timerService.HandleGameSettings(gameSettingsMessage);
                 break;
