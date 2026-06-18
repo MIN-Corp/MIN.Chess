@@ -104,6 +104,24 @@ public class King : Piece
     }
 
     /// <inheritdoc />
+    public override IEnumerable<Position> GetPremovePositions(Position from, Board board)
+    {
+        foreach (var dir in dirs)
+        {
+            var to = from + dir;
+            if (Board.IsInside(to))
+            {
+                yield return to;
+            }
+        }
+        if (!HasMoved)
+        {
+            yield return new Position(from.Row, from.Column + 2); // KS
+            yield return new Position(from.Row, from.Column - 2); // QS
+        }
+    }
+
+    /// <inheritdoc />
     public override IEnumerable<Move> GetMoves(Position from, Board board)
     {
         foreach (var to in MovePositions(from, board))

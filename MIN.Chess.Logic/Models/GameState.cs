@@ -69,21 +69,21 @@ public class GameState
     /// <summary>
     /// Получить все кандидаты на ход
     /// </summary>
-    public IEnumerable<Move> MoveCandidatesForPiece(Position position, Player? role = null)
+    public IEnumerable<Position> PremovePositionsForPiece(Position position, Player? role = null)
     {
-        if (Board.IsEmpty(position) || Board[position]?.Color != CurrentPlayer)
+        if (Board.IsEmpty(position))
         {
             return [];
         }
 
-        if (role != null && (role != CurrentPlayer || role == Player.None))
+        if (role != null && role == Player.None)
         {
             return [];
         }
 
         var piece = Board[position];
-        var movesCandidates = piece?.GetMoves(position, Board) ?? [];
-        return movesCandidates;
+        var premovePositions = piece?.GetPremovePositions(position, Board) ?? [];
+        return premovePositions;
     }
 
     /// <summary>

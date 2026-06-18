@@ -181,7 +181,7 @@ public partial class MainForm
             g.FillRectangle(selectedBrush, cellRectangles[selectedPos.Value.Row, selectedPos.Value.Column]);
 
             using var moveBrush = new SolidBrush(Color.FromArgb(50, 80, 80, 80));
-            foreach (Position pos in moveCache.Keys)
+            foreach (var pos in moveCache.Keys)
             {
                 var r = cellRectangles[pos.Row, pos.Column];
                 var targetPiece = gameState!.Board[pos.Row, pos.Column];
@@ -233,13 +233,18 @@ public partial class MainForm
 
         if (TryingToPremove())
         {
+            if (selectedPos != null && moveCache.ContainsKey(pos.Value))
+            {
+                return;
+            }
+
             selectedPos = pos.Value;
 
+            var premovePositions = gameState.PremovePositionsForPiece(pos.Value, role);
             moveCache.Clear();
-            var moveCandidates = gameState.MoveCandidatesForPiece(pos.Value, role);
-            foreach (var move in moveCandidates)
+            foreach (var to in premovePositions)
             {
-                moveCache[move.ToPos] = move;
+                moveCache[to] = null!;
             }
 
             var premovePiece = gameState.Board[selectedPos.Value.Row, selectedPos.Value.Column];
@@ -255,7 +260,6 @@ public partial class MainForm
             isDragging = true;
 
             gameState.Board[selectedPos.Value.Row, selectedPos.Value.Column] = null;
-
             mainPanel.Invalidate();
             return;
         }
@@ -307,6 +311,37 @@ public partial class MainForm
 
             gameState!.Board[dragFromPos!.Value.Row, dragFromPos!.Value.Column] = draggedPiece;
 
+            if (TryingToPremove())
+            {
+                if (dropPos == null || (dropPos != null && dropPos.Value == dragFromPos!.Value))
+                {
+                    ClearDrag();
+                    mainPanel.Invalidate();
+                    return;
+                }
+
+                var piece = draggedPiece;
+                var from = dragFromPos!.Value;
+                var to = dropPos!.Value;
+
+                if (moveCache.ContainsKey(dropPos.Value))
+                {
+                    if (piece?.Type == PieceType.Pawn && IsPromotionRank(to, piece.Color))
+                    {
+                        ShowPromotionDialogAndQueue(from, to, piece.Color);
+                    }
+                    else
+                    {
+                        premoves.Add((from, to, null));
+                    }
+                    ClearSelection();
+                }
+
+                ClearDrag();
+                mainPanel.Invalidate();
+                return;
+            }
+
             var handlePromotion = false;
             var handleMoveDirect = false;
             Move? moveToMake = null;
@@ -322,38 +357,6 @@ public partial class MainForm
                     handleMoveDirect = true;
                 }
                 moveToMake = move;
-            }
-
-            if (TryingToPremove())
-            {
-                // PREMOVE via drag
-                if (dropPos != null)
-                {
-                    var piece = draggedPiece;
-                    var from = dragFromPos!.Value;
-                    var to = dropPos.Value;
-
-                    // Check for promotion
-                    if (piece?.Type == PieceType.Pawn && IsPromotionRank(to, piece.Color))
-                    {
-                        ShowPromotionDialogAndQueue(from, to, piece.Color);
-                    }
-                    else
-                    {
-                        premoves.Add((from, to, null));
-                    }
-
-                    ClearDrag();
-                    ClearSelection();
-                    mainPanel.Invalidate();
-                    return;
-                }
-
-                // illegal drop during premove — snap back
-                ClearDrag();
-                ClearSelection();
-                mainPanel.Invalidate();
-                return;
             }
 
             ClearDrag();
@@ -390,16 +393,19 @@ public partial class MainForm
             var from = selectedPos.Value;
             var to = clickPos.Value;
 
-            if (piece?.Type == PieceType.Pawn && IsPromotionRank(to, piece.Color))
+            if (moveCache.ContainsKey(to))
             {
-                ShowPromotionDialogAndQueue(from, to, piece.Color);
-            }
-            else
-            {
-                premoves.Add((from, to, null));
+                if (piece?.Type == PieceType.Pawn && IsPromotionRank(to, piece.Color))
+                {
+                    ShowPromotionDialogAndQueue(from, to, piece.Color);
+                }
+                else
+                {
+                    premoves.Add((from, to, null));
+                }
+                selectedPos = null;
             }
 
-            selectedPos = null;
             moveCache.Clear();
             mainPanel.Invalidate();
         }

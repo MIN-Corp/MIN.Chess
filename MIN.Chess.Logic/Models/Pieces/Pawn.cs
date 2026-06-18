@@ -126,6 +126,33 @@ public class Pawn : Piece
         => ForwardMoves(from, board).Concat(DiagonalMoves(from, board));
 
     /// <inheritdoc />
+    public override IEnumerable<Position> GetPremovePositions(Position from, Board board)
+    {
+        var oneMovePos = from + forward;
+
+        if (Board.IsInside(oneMovePos))
+        {
+            yield return oneMovePos;
+        }
+
+        var twoMovePos = oneMovePos + forward;
+
+        if (Board.IsInside(twoMovePos) && !HasMoved)
+        {
+            yield return twoMovePos;
+        }
+
+        foreach (var dir in new[] { Direction.West, Direction.East })
+        {
+            var to = from + forward + dir;
+            if (Board.IsInside(to))
+            {
+                yield return to;
+            }
+        }
+    }
+
+    /// <inheritdoc />
     public override bool CanCaptureOpponentKing(Position from, Board board)
         => DiagonalMoves(from, board).Any(move =>
         {
