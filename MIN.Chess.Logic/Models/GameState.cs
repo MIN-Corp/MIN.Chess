@@ -67,6 +67,26 @@ public class GameState
     }
 
     /// <summary>
+    /// Получить все кандидаты на ход
+    /// </summary>
+    public IEnumerable<Move> MoveCandidatesForPiece(Position position, Player? role = null)
+    {
+        if (Board.IsEmpty(position) || Board[position]?.Color != CurrentPlayer)
+        {
+            return [];
+        }
+
+        if (role != null && (role != CurrentPlayer || role == Player.None))
+        {
+            return [];
+        }
+
+        var piece = Board[position];
+        var movesCandidates = piece?.GetMoves(position, Board) ?? [];
+        return movesCandidates;
+    }
+
+    /// <summary>
     /// Выполнить ход
     /// </summary>
     public void MakeMove(Move move)

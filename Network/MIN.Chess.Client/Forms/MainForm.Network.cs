@@ -1,5 +1,8 @@
-﻿using MIN.Chess.Logic.Enums;
+﻿using MIN.Chess.Client.Forms.HelperForms;
+using MIN.Chess.Logic.Enums;
 using MIN.Chess.Logic.Models;
+using MIN.Chess.Logic.Models.Coordination;
+using MIN.Chess.Logic.Models.Moves;
 using MIN.Chess.Logic.Services;
 using MIN.Chess.Messages.Messages;
 using MIN.Ipc.Services.Contracts.Interfaces;
@@ -93,6 +96,8 @@ public partial class MainForm
                         mainPanel.BackgroundImageLayout = ImageLayout.Zoom;
                     }
 
+                    premoves.Clear();
+
                     SyncTimerValues(initResponseMessage.WhiteMs, initResponseMessage.BlackMs, gameState.CurrentPlayer);
                     UpdateTurnColors();
                     UpdatePlayersInfo();
@@ -115,7 +120,11 @@ public partial class MainForm
                     ? MoveParser.Parse(stateUpdateMessage.LastMove, gameState.Board)
                     : null;
 
+                premoves.Clear();
+
                 UpdateTurnColors();
+                ClearDrag();
+                ClearSelection();
                 CountPiecesCapturesForSelfAndOpponent();
                 SyncTimerValues(stateUpdateMessage.WhiteMs, stateUpdateMessage.BlackMs, gameState.CurrentPlayer);
 
@@ -133,8 +142,8 @@ public partial class MainForm
 
                 SyncTimerValues(moveUpdateMessage.WhiteMs, moveUpdateMessage.BlackMs, gameState.CurrentPlayer);
                 CountPiecesCapturesForSelfAndOpponent();
-
                 moveCache.Clear();
+                await TryProcessPremoves();
                 mainPanel.Invalidate();
                 break;
 
@@ -142,6 +151,7 @@ public partial class MainForm
                 var loser = gameState!.CurrentPlayer;
                 gameState!.CurrentPlayer = Player.None;
                 countdownTimer?.Stop();
+                premoves.Clear();
                 uiContext.Post(_ =>
                 {
                     ClearDrag();
@@ -251,6 +261,60 @@ public partial class MainForm
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "Move Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void HandlePromotion(Position from, Position to)
+    {
+        if (gameState == null)
+        {
+            return;
+        }
+
+        pendingPromotionMove = new NormalMove(from, to);
+        mainPanel.Invalidate();
+
+        var promotionMenu = new PromotionMenu(gameState.CurrentPlayer);
+        promotionMenu.PieceSelected += pieceType =>
+        {
+            promotionMenu.Close();
+            var promMove = new PawnPromotion(from, to, pieceType);
+            HandleMove(promMove);
+            pendingPromotionMove = null;
+        };
+        promotionMenu.ShowDialog();
+    }
+
+    private async Task TryProcessPremoves()
+    {
+        if (premoves.Count == 0 || gameState.CurrentPlayer != role)
+        {
+            return;
+        }
+
+        var (from, to, promoPiece) = premoves[0];
+        premoves.RemoveAt(0);
+
+        var moves = gameState.LegalMovesForPiece(from, role);
+        var match = moves.FirstOrDefault(m => m.ToPos.Row == to.Row && m.ToPos.Column == to.Column);
+
+        if (match != null)
+        {
+            if (match.Type == MoveType.PawnPromotion)
+            {
+                HandleMove(new PawnPromotion(from, to, promoPiece ?? PieceType.Queen));
+            }
+            else
+            {
+                HandleMove(match);
+            }
+        }
+        else
+        {
+            premoves.Clear();
+            moveCache.Clear();
+            selectedPos = null;
+            mainPanel.Invalidate();
         }
     }
 }

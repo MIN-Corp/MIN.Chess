@@ -3,7 +3,6 @@ using MIN.Chess.Client.Services;
 using MIN.Chess.Logic.Enums;
 using MIN.Chess.Logic.Models;
 using MIN.Chess.Logic.Models.Coordination;
-using MIN.Chess.Logic.Models.Moves;
 
 namespace MIN.Chess.Client.Forms;
 
@@ -12,6 +11,7 @@ public partial class MainForm
     private readonly Dictionary<Position, Move> moveCache = [];
     private List<(Player Color, PieceType Type)>? selfCaptures;
     private List<(Player Color, PieceType Type)>? opponentCaptures;
+    private readonly List<(Position From, Position To, PieceType? PromotionPiece)> premoves = [];
     private readonly static Dictionary<PieceType, int> startPieces = new()
     {
         [PieceType.Pawn] = 8,
@@ -101,6 +101,11 @@ public partial class MainForm
                     continue;
                 }
 
+                if (premoves.Any(p => p.From == new Position(row, col)))
+                {
+                    continue;
+                }
+
                 var piece = board[row, col];
                 if (piece == null)
                 {
@@ -134,6 +139,20 @@ public partial class MainForm
                 if (pieceImage != null)
                 {
                     var rect = cellRectangles[pendingPromotionMove.ToPos.Row, pendingPromotionMove.ToPos.Column];
+                    g.DrawImage(pieceImage, rect);
+                }
+            }
+        }
+
+        foreach (var (from, to, _) in premoves)
+        {
+            var movingPiece = gameState.Board[from.Row, from.Column];
+            if (movingPiece != null)
+            {
+                var pieceImage = ImageHelper.GetImage(movingPiece);
+                if (pieceImage != null)
+                {
+                    var rect = cellRectangles[to.Row, to.Column];
                     g.DrawImage(pieceImage, rect);
                 }
             }
@@ -190,6 +209,13 @@ public partial class MainForm
             g.FillRectangle(brush, cellRectangles[lastMove.FromPos.Row, lastMove.FromPos.Column]);
             g.FillRectangle(brush, cellRectangles[lastMove.ToPos.Row, lastMove.ToPos.Column]);
         }
+
+        foreach (var (from, to, _) in premoves)
+        {
+            using var premoveBrush = new SolidBrush(Color.FromArgb(100, 200, 20, 20));
+            g.FillRectangle(premoveBrush, cellRectangles[from.Row, from.Column]);
+            g.FillRectangle(premoveBrush, cellRectangles[to.Row, to.Column]);
+        }
     }
 
     private void MainPanel_MouseDown(object? sender, MouseEventArgs e)
@@ -202,6 +228,35 @@ public partial class MainForm
         var pos = GetPositionFromPoint(e.Location);
         if (pos == null)
         {
+            return;
+        }
+
+        if (TryingToPremove())
+        {
+            selectedPos = pos.Value;
+
+            moveCache.Clear();
+            var moveCandidates = gameState.MoveCandidatesForPiece(pos.Value, role);
+            foreach (var move in moveCandidates)
+            {
+                moveCache[move.ToPos] = move;
+            }
+
+            var premovePiece = gameState.Board[selectedPos.Value.Row, selectedPos.Value.Column];
+            if (premovePiece == null)
+            {
+                ClearSelection();
+                return;
+            }
+
+            dragFromPos = selectedPos;
+            draggedPiece = premovePiece;
+            dragCurrentCursor = e.Location;
+            isDragging = true;
+
+            gameState.Board[selectedPos.Value.Row, selectedPos.Value.Column] = null;
+
+            mainPanel.Invalidate();
             return;
         }
 
@@ -269,6 +324,38 @@ public partial class MainForm
                 moveToMake = move;
             }
 
+            if (TryingToPremove())
+            {
+                // PREMOVE via drag
+                if (dropPos != null)
+                {
+                    var piece = draggedPiece;
+                    var from = dragFromPos!.Value;
+                    var to = dropPos.Value;
+
+                    // Check for promotion
+                    if (piece?.Type == PieceType.Pawn && IsPromotionRank(to, piece.Color))
+                    {
+                        ShowPromotionDialogAndQueue(from, to, piece.Color);
+                    }
+                    else
+                    {
+                        premoves.Add((from, to, null));
+                    }
+
+                    ClearDrag();
+                    ClearSelection();
+                    mainPanel.Invalidate();
+                    return;
+                }
+
+                // illegal drop during premove — snap back
+                ClearDrag();
+                ClearSelection();
+                mainPanel.Invalidate();
+                return;
+            }
+
             ClearDrag();
 
             if (handlePromotion)
@@ -296,6 +383,25 @@ public partial class MainForm
         if (selectedPos == null)
         {
             OnFromPositionSelected(clickPos.Value);
+        }
+        else if (gameState!.CurrentPlayer != role)
+        {
+            var piece = gameState.Board[selectedPos.Value.Row, selectedPos.Value.Column];
+            var from = selectedPos.Value;
+            var to = clickPos.Value;
+
+            if (piece?.Type == PieceType.Pawn && IsPromotionRank(to, piece.Color))
+            {
+                ShowPromotionDialogAndQueue(from, to, piece.Color);
+            }
+            else
+            {
+                premoves.Add((from, to, null));
+            }
+
+            selectedPos = null;
+            moveCache.Clear();
+            mainPanel.Invalidate();
         }
         else
         {
@@ -330,6 +436,25 @@ public partial class MainForm
             }
         }
         return null;
+    }
+
+    private static bool IsPromotionRank(Position to, Player color)
+        => color == Player.White ? to.Row == 0 : to.Row == 7;
+
+    private bool TryingToPremove()
+        => role!.Value != gameState.CurrentPlayer
+        && role!.Value != Player.None && gameState.CurrentPlayer != Player.None;
+
+    private void ShowPromotionDialogAndQueue(Position from, Position to, Player color)
+    {
+        var menu = new PromotionMenu(color);
+        menu.PieceSelected += type =>
+        {
+            menu.Close();
+            premoves.Add((from, to, type));
+            mainPanel.Invalidate();
+        };
+        menu.ShowDialog(this);
     }
 
     private void OnFromPositionSelected(Position position)
@@ -387,30 +512,6 @@ public partial class MainForm
         flowLayoutPanelSettings.Visible = hasRightToChangeSettings;
         settingsTitle.Visible = hasRightToChangeSettings;
         buttonSaveSettings.Visible = hasRightToChangeSettings;
-
-        ClearDrag();
-        ClearSelection();
-    }
-
-    private void HandlePromotion(Position from, Position to)
-    {
-        if (gameState == null)
-        {
-            return;
-        }
-
-        pendingPromotionMove = new NormalMove(from, to);
-        mainPanel.Invalidate();
-
-        var promotionMenu = new PromotionMenu(gameState.CurrentPlayer);
-        promotionMenu.PieceSelected += pieceType =>
-        {
-            promotionMenu.Close();
-            var promMove = new PawnPromotion(from, to, pieceType);
-            HandleMove(promMove);
-            pendingPromotionMove = null;
-        };
-        promotionMenu.ShowDialog();
     }
 
     private void CountPiecesCapturesForSelfAndOpponent()
