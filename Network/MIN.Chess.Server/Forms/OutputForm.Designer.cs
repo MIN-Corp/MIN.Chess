@@ -51,6 +51,7 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "OutputForm";
             Text = "Сервер шахмат";
+            FormClosing += OutputForm_FormClosing;
             Load += OutputForm_Load;
             ResumeLayout(false);
         }

@@ -42,15 +42,15 @@ namespace MIN.Chess.Client.Forms
             pauseButton = new Button();
             resignButton = new Button();
             tableLayoutPanelOpponent = new TableLayoutPanel();
-            flowLayoutPanelOpponentCaptures = new FlowLayoutPanel();
             opponentNameWithTimer = new Panel();
             opponentTimerLabel = new MIN.Chess.Client.Components.Labels.Heading3Label();
             opponentName = new MIN.Chess.Client.Components.Labels.Heading3Label();
+            opponentCapturesPanel = new Panel();
             tableLayoutPanelSelf = new TableLayoutPanel();
             selfNameAndTimer = new Panel();
             selfTimerLabel = new MIN.Chess.Client.Components.Labels.Heading3Label();
             selfRoleName = new MIN.Chess.Client.Components.Labels.Heading3Label();
-            flowLayoutPanelSelfCaptures = new FlowLayoutPanel();
+            selfCapturesPanel = new Panel();
             changeRoleButton = new MIN.Chess.Client.Components.Buttons.InvertedButton();
             flowLayoutPanelVotes = new FlowLayoutPanel();
             restartQuote = new MIN.Chess.Client.Components.Labels.Heading3Label();
@@ -234,8 +234,8 @@ namespace MIN.Chess.Client.Forms
             // 
             tableLayoutPanelOpponent.ColumnCount = 1;
             tableLayoutPanelOpponent.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            tableLayoutPanelOpponent.Controls.Add(flowLayoutPanelOpponentCaptures, 0, 1);
             tableLayoutPanelOpponent.Controls.Add(opponentNameWithTimer, 0, 0);
+            tableLayoutPanelOpponent.Controls.Add(opponentCapturesPanel, 0, 1);
             tableLayoutPanelOpponent.Location = new Point(3, 3);
             tableLayoutPanelOpponent.Name = "tableLayoutPanelOpponent";
             tableLayoutPanelOpponent.RowCount = 2;
@@ -243,16 +243,6 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanelOpponent.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tableLayoutPanelOpponent.Size = new Size(174, 42);
             tableLayoutPanelOpponent.TabIndex = 7;
-            // 
-            // flowLayoutPanelOpponentCaptures
-            // 
-            flowLayoutPanelOpponentCaptures.Dock = DockStyle.Fill;
-            flowLayoutPanelOpponentCaptures.Location = new Point(0, 20);
-            flowLayoutPanelOpponentCaptures.Margin = new Padding(0);
-            flowLayoutPanelOpponentCaptures.Name = "flowLayoutPanelOpponentCaptures";
-            flowLayoutPanelOpponentCaptures.Size = new Size(174, 22);
-            flowLayoutPanelOpponentCaptures.TabIndex = 3;
-            flowLayoutPanelOpponentCaptures.WrapContents = false;
             // 
             // opponentNameWithTimer
             // 
@@ -286,12 +276,22 @@ namespace MIN.Chess.Client.Forms
             opponentName.TabIndex = 2;
             opponentName.Text = "Загрузка . . .";
             // 
+            // opponentCapturesPanel
+            // 
+            opponentCapturesPanel.Dock = DockStyle.Fill;
+            opponentCapturesPanel.Location = new Point(0, 20);
+            opponentCapturesPanel.Margin = new Padding(0);
+            opponentCapturesPanel.Name = "opponentCapturesPanel";
+            opponentCapturesPanel.Size = new Size(174, 22);
+            opponentCapturesPanel.TabIndex = 16;
+            opponentCapturesPanel.Paint += PanelCaptures_Paint;
+            // 
             // tableLayoutPanelSelf
             // 
             tableLayoutPanelSelf.ColumnCount = 1;
             tableLayoutPanelSelf.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tableLayoutPanelSelf.Controls.Add(selfNameAndTimer, 0, 0);
-            tableLayoutPanelSelf.Controls.Add(flowLayoutPanelSelfCaptures, 0, 1);
+            tableLayoutPanelSelf.Controls.Add(selfCapturesPanel, 0, 1);
             tableLayoutPanelSelf.Location = new Point(3, 534);
             tableLayoutPanelSelf.Name = "tableLayoutPanelSelf";
             tableLayoutPanelSelf.RowCount = 2;
@@ -332,15 +332,15 @@ namespace MIN.Chess.Client.Forms
             selfRoleName.TabIndex = 1;
             selfRoleName.Text = "Загрузка . . .";
             // 
-            // flowLayoutPanelSelfCaptures
+            // selfCapturesPanel
             // 
-            flowLayoutPanelSelfCaptures.Dock = DockStyle.Fill;
-            flowLayoutPanelSelfCaptures.Location = new Point(0, 20);
-            flowLayoutPanelSelfCaptures.Margin = new Padding(0);
-            flowLayoutPanelSelfCaptures.Name = "flowLayoutPanelSelfCaptures";
-            flowLayoutPanelSelfCaptures.Size = new Size(174, 22);
-            flowLayoutPanelSelfCaptures.TabIndex = 4;
-            flowLayoutPanelSelfCaptures.WrapContents = false;
+            selfCapturesPanel.Dock = DockStyle.Fill;
+            selfCapturesPanel.Location = new Point(0, 20);
+            selfCapturesPanel.Margin = new Padding(0);
+            selfCapturesPanel.Name = "selfCapturesPanel";
+            selfCapturesPanel.Size = new Size(174, 22);
+            selfCapturesPanel.TabIndex = 17;
+            selfCapturesPanel.Paint += PanelCaptures_Paint;
             // 
             // changeRoleButton
             // 
@@ -620,9 +620,7 @@ namespace MIN.Chess.Client.Forms
         private TableLayoutPanel tableLayoutPanelButtons;
         private TableLayoutPanel tableLayoutPanelSpectating;
         private TableLayoutPanel tableLayoutPanelOpponent;
-        private FlowLayoutPanel flowLayoutPanelOpponentCaptures;
         private TableLayoutPanel tableLayoutPanelSelf;
-        private FlowLayoutPanel flowLayoutPanelSelfCaptures;
         private Button resignButton;
         private Button pauseButton;
         private Components.Labels.Heading3Label restartQuote;
@@ -649,5 +647,7 @@ namespace MIN.Chess.Client.Forms
         private Components.Labels.Heading3Label opponentTimerLabel;
         private Panel selfNameAndTimer;
         private Components.Labels.Heading3Label selfTimerLabel;
+        private Panel selfCapturesPanel;
+        private Panel opponentCapturesPanel;
     }
 }

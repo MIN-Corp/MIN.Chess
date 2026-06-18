@@ -82,7 +82,9 @@ public partial class MainForm
                     if (firstUpdate)
                     {
                         mainPanel.Paint += MainPanel_Paint;
-                        mainPanel.MouseClick += MainPanel_MouseClick;
+                        mainPanel.MouseDown += MainPanel_MouseDown;
+                        mainPanel.MouseMove += MainPanel_MouseMove;
+                        mainPanel.MouseUp += MainPanel_MouseUp;
                         mainPanel.Resize += (_, _) => CalculateCellRectangles();
 
                         mainPanel.BackgroundImage = role == Player.Black
@@ -137,12 +139,15 @@ public partial class MainForm
                 break;
 
             case GameResultMessage gameResultMessage:
+                var loser = gameState!.CurrentPlayer;
                 gameState!.CurrentPlayer = Player.None;
                 countdownTimer?.Stop();
                 uiContext.Post(_ =>
                 {
+                    ClearDrag();
+                    ClearSelection();
                     drawQuote.Visible = false;
-                    ShowGameOver(gameResultMessage.Result, gameState!.CurrentPlayer);
+                    ShowGameOver(gameResultMessage.Result, loser);
                 }, this);
                 break;
 

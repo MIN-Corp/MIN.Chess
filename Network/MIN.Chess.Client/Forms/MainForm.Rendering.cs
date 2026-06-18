@@ -10,6 +10,8 @@ namespace MIN.Chess.Client.Forms;
 public partial class MainForm
 {
     private readonly Dictionary<Position, Move> moveCache = [];
+    private List<(Player Color, PieceType Type)>? selfCaptures;
+    private List<(Player Color, PieceType Type)>? opponentCaptures;
     private readonly static Dictionary<PieceType, int> startPieces = new()
     {
         [PieceType.Pawn] = 8,
@@ -23,6 +25,11 @@ public partial class MainForm
     private Rectangle[,] cellRectangles = null!;
     private Move? pendingPromotionMove;
     private Position? selectedPos;
+
+    private Position? dragFromPos;
+    private Piece? draggedPiece;
+    private Point? dragCurrentCursor;
+    private bool isDragging;
 
     private void CalculateCellRectangles()
     {
@@ -88,6 +95,12 @@ public partial class MainForm
         {
             for (var col = 0; col < 8; col++)
             {
+                if (isDragging && dragFromPos != null &&
+                    row == dragFromPos.Value.Row && col == dragFromPos.Value.Column)
+                {
+                    continue;
+                }
+
                 var piece = board[row, col];
                 if (piece == null)
                 {
@@ -125,16 +138,49 @@ public partial class MainForm
                 }
             }
         }
+
+        if (isDragging && draggedPiece != null && dragCurrentCursor != null)
+        {
+            var pieceImage = ImageHelper.GetImage(draggedPiece);
+            if (pieceImage != null)
+            {
+                var cellSize = cellRectangles[0, 0].Width;
+                var x = dragCurrentCursor.Value.X - cellSize / 2;
+                var y = dragCurrentCursor.Value.Y - cellSize / 2;
+                var rect = new Rectangle(x, y, cellSize, cellSize);
+
+                g.DrawImage(pieceImage, rect);
+            }
+        }
     }
 
     private void DrawHighlights(Graphics g)
     {
         if (selectedPos != null)
         {
-            using var brush = new SolidBrush(Color.FromArgb(100, 0, 255, 0));
+            using var selectedBrush = new SolidBrush(Color.FromArgb(100, 255, 255, 0));
+            g.FillRectangle(selectedBrush, cellRectangles[selectedPos.Value.Row, selectedPos.Value.Column]);
+
+            using var moveBrush = new SolidBrush(Color.FromArgb(50, 80, 80, 80));
             foreach (Position pos in moveCache.Keys)
             {
-                g.FillRectangle(brush, cellRectangles[pos.Row, pos.Column]);
+                var r = cellRectangles[pos.Row, pos.Column];
+                var targetPiece = gameState!.Board[pos.Row, pos.Column];
+
+                if (targetPiece != null)
+                {
+                    using var pen = new Pen(Color.FromArgb(150, 80, 80, 80), 5);
+                    g.DrawEllipse(pen, r.X + 3, r.Y + 3, r.Width - 6, r.Height - 6);
+                }
+                else
+                {
+                    using var brush = new SolidBrush(Color.FromArgb(50, 80, 80, 80));
+                    var dotSize = r.Width / 3;
+                    g.FillEllipse(brush,
+                        r.X + (r.Width - dotSize) / 2,
+                        r.Y + (r.Height - dotSize) / 2,
+                        dotSize, dotSize);
+                }
             }
         }
 
@@ -146,22 +192,129 @@ public partial class MainForm
         }
     }
 
-    private void MainPanel_MouseClick(object? sender, MouseEventArgs e)
+    private void MainPanel_MouseDown(object? sender, MouseEventArgs e)
     {
+        if (e.Button != MouseButtons.Left || gameState == null || isDragging)
+        {
+            return;
+        }
+
         var pos = GetPositionFromPoint(e.Location);
         if (pos == null)
         {
             return;
         }
 
+        var moves = gameState.LegalMovesForPiece(pos.Value, role);
+        if (!moves.Any())
+        {
+            return;
+        }
+
+        selectedPos = pos.Value;
+        moveCache.Clear();
+        foreach (var move in moves)
+        {
+            moveCache[move.ToPos] = move;
+        }
+
+        var piece = gameState.Board[selectedPos.Value.Row, selectedPos.Value.Column];
+        if (piece == null)
+        {
+            ClearSelection();
+            return;
+        }
+
+        dragFromPos = selectedPos;
+        draggedPiece = piece;
+        dragCurrentCursor = e.Location;
+        isDragging = true;
+
+        gameState.Board[selectedPos.Value.Row, selectedPos.Value.Column] = null;
+        mainPanel.Invalidate();
+    }
+
+    private void MainPanel_MouseMove(object? sender, MouseEventArgs e)
+    {
+        if (isDragging && draggedPiece != null)
+        {
+            dragCurrentCursor = e.Location;
+            mainPanel.Invalidate();
+            return;
+        }
+    }
+
+    private void MainPanel_MouseUp(object? sender, MouseEventArgs e)
+    {
+        if (isDragging)
+        {
+            var dropPos = GetPositionFromPoint(e.Location);
+
+            gameState!.Board[dragFromPos!.Value.Row, dragFromPos!.Value.Column] = draggedPiece;
+
+            var handlePromotion = false;
+            var handleMoveDirect = false;
+            Move? moveToMake = null;
+
+            if (dropPos != null && moveCache.TryGetValue(dropPos.Value, out var move))
+            {
+                if (move.Type == MoveType.PawnPromotion)
+                {
+                    handlePromotion = true;
+                }
+                else
+                {
+                    handleMoveDirect = true;
+                }
+                moveToMake = move;
+            }
+
+            ClearDrag();
+
+            if (handlePromotion)
+            {
+                HandlePromotion(moveToMake!.FromPos, moveToMake.ToPos);
+            }
+            else if (handleMoveDirect && moveToMake != null)
+            {
+                HandleMove(moveToMake);
+            }
+            else
+            {
+                mainPanel.Invalidate();
+            }
+
+            return;
+        }
+
+        var clickPos = GetPositionFromPoint(e.Location);
+        if (clickPos == null)
+        {
+            return;
+        }
+
         if (selectedPos == null)
         {
-            OnFromPositionSelected(pos.Value);
+            OnFromPositionSelected(clickPos.Value);
         }
         else
         {
-            OnToPositionSelected(pos.Value);
+            OnToPositionSelected(clickPos.Value);
         }
+    }
+
+    private void ClearDrag()
+    {
+        isDragging = false;
+        dragFromPos = null;
+        draggedPiece = null;
+        dragCurrentCursor = null;
+    }
+
+    private void ClearSelection()
+    {
+        selectedPos = null;
+        moveCache.Clear();
     }
 
     private Position? GetPositionFromPoint(Point point)
@@ -181,23 +334,20 @@ public partial class MainForm
 
     private void OnFromPositionSelected(Position position)
     {
-        if (gameState == null)
+        var moves = gameState.LegalMovesForPiece(position, role);
+        if (!moves.Any())
         {
             return;
         }
 
-        var moves = gameState.LegalMovesForPiece(position, role);
-        if (moves.Any())
+        selectedPos = position;
+        moveCache.Clear();
+        foreach (var move in moves)
         {
-            selectedPos = position;
-            moveCache.Clear();
-            foreach (var move in moves)
-            {
-                moveCache[move.ToPos] = move;
-            }
-
-            mainPanel.Invalidate();
+            moveCache[move.ToPos] = move;
         }
+
+        mainPanel.Invalidate();
     }
 
     private void OnToPositionSelected(Position position)
@@ -237,6 +387,9 @@ public partial class MainForm
         flowLayoutPanelSettings.Visible = hasRightToChangeSettings;
         settingsTitle.Visible = hasRightToChangeSettings;
         buttonSaveSettings.Visible = hasRightToChangeSettings;
+
+        ClearDrag();
+        ClearSelection();
     }
 
     private void HandlePromotion(Position from, Position to)
@@ -262,62 +415,72 @@ public partial class MainForm
 
     private void CountPiecesCapturesForSelfAndOpponent()
     {
-        foreach (Control image in flowLayoutPanelSelfCaptures.Controls)
+        var isFlipped = role == Player.Black;
+
+        var capturedBlack = startPieces.ToDictionary(
+            x => x.Key, x => x.Value - gameState!.Board.CountOf(Player.Black, x.Key));
+
+        var capturedWhite = startPieces.ToDictionary(
+            x => x.Key, x => x.Value - gameState!.Board.CountOf(Player.White, x.Key));
+
+        if (!isFlipped)
         {
-            image.Dispose();
+            selfCaptures = FlattenCaptures(Player.Black, capturedBlack);
+            opponentCaptures = FlattenCaptures(Player.White, capturedWhite);
+        }
+        else
+        {
+            selfCaptures = FlattenCaptures(Player.White, capturedWhite);
+            opponentCaptures = FlattenCaptures(Player.Black, capturedBlack);
         }
 
-        foreach (Control image in flowLayoutPanelOpponentCaptures.Controls)
-        {
-            image.Dispose();
-        }
-
-        var isFlipped = role!.Value == Player.Black;
-
-        var capturedBlackPieces = startPieces
-            .ToDictionary(x => x.Key, x => x.Value - gameState!.Board.CountOf(Player.Black, x.Key));
-
-        foreach (PieceType pieceType in Enum.GetValues(typeof(PieceType)))
-        {
-            for (var i = 0; i < capturedBlackPieces[pieceType]; i++)
-            {
-                if (!isFlipped)
-                {
-                    flowLayoutPanelSelfCaptures.Controls.Add(CreatePiecePictureForCapture(Player.Black, pieceType));
-                }
-                else
-                {
-                    flowLayoutPanelOpponentCaptures.Controls.Add(CreatePiecePictureForCapture(Player.Black, pieceType));
-                }
-            }
-        }
-
-        var capturedWhitePieces = startPieces
-            .ToDictionary(x => x.Key, x => x.Value - gameState!.Board.CountOf(Player.White, x.Key));
-
-        foreach (PieceType pieceType in Enum.GetValues(typeof(PieceType)))
-        {
-            for (var i = 0; i < capturedWhitePieces[pieceType]; i++)
-            {
-                if (!isFlipped)
-                {
-                    flowLayoutPanelOpponentCaptures.Controls.Add(CreatePiecePictureForCapture(Player.White, pieceType));
-                }
-                else
-                {
-                    flowLayoutPanelSelfCaptures.Controls.Add(CreatePiecePictureForCapture(Player.White, pieceType));
-                }
-            }
-        }
+        selfCapturesPanel.Invalidate();
+        opponentCapturesPanel.Invalidate();
     }
 
-    private PictureBox CreatePiecePictureForCapture(Player player, PieceType pieceType)
-        => new()
+    private static List<(Player Color, PieceType Type)> FlattenCaptures(
+    Player capturedColor, Dictionary<PieceType, int> capturedCounts)
+    {
+        var result = new List<(Player, PieceType)>();
+        foreach (var pieceType in capturedCounts.Keys)
         {
-            Width = Convert.ToInt32(flowLayoutPanelSelfCaptures.Height / 1.2),
-            Height = flowLayoutPanelSelfCaptures.Height,
-            Image = ImageHelper.GetImage(player, pieceType),
-            SizeMode = PictureBoxSizeMode.Zoom,
-            Margin = new Padding(0, 0, 0, 0),
-        };
+            for (var i = 0; i < capturedCounts[pieceType]; i++)
+            {
+                result.Add((capturedColor, pieceType));
+            }
+        }
+        return result;
+    }
+
+
+    private void PanelCaptures_Paint(object sender, PaintEventArgs e)
+    {
+        var list = sender == selfCapturesPanel ? selfCaptures : opponentCaptures;
+        if (list == null || list.Count == 0)
+        {
+            return;
+        }
+
+        var panel = (Panel)sender;
+        var cellSize = panel.Height;
+        var x = 0;
+        const int tightGap = -12;
+        const int normalGap = 0;
+
+        for (var i = 0; i < list.Count; i++)
+        {
+            var (color, type) = list[i];
+            var img = ImageHelper.GetImage(color, type);
+            if (img == null)
+            {
+                continue;
+            }
+
+            var gap = (i > 0 && list[i - 1].Type == type) ? tightGap : normalGap;
+            x += gap;
+
+            e.Graphics.DrawImage(img, x, 0, cellSize, cellSize);
+            x += cellSize;
+        }
+    }
 }

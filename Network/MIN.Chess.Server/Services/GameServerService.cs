@@ -62,6 +62,12 @@ internal class GameServerService
         }
     }
 
+    public void StopService()
+    {
+        appCts.Cancel();
+        appCts.Dispose();
+    }
+
     private async void NetworkMessageReceived(object? sender, INetworkMessage message)
     {
         await HandleMessage(message);

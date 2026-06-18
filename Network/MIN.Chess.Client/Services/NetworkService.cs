@@ -1,4 +1,5 @@
 ﻿using MIN.Chess.Messages;
+using MIN.Chess.Messages.Contracts.Models;
 using MIN.Chess.Messages.Messages;
 using MIN.Ipc.Services.Contracts.Interfaces;
 
@@ -26,6 +27,9 @@ internal class NetworkService
         this.cancellationToken = cancellationToken;
     }
 
+    /// <summary>
+    /// Подключиться к MIN и отправить сообщение о готовности
+    /// </summary>
     public async Task ConnectAsync(string connectionString)
     {
         try
@@ -47,32 +51,32 @@ internal class NetworkService
     /// <summary>
     /// Отправить запрос на ход
     /// </summary>
-    public Task SendMoveAsync(string uci) => bridge.SendMessage(new MoveRequestMessage { MoveUciNotation = uci }, cancellationToken: cancellationToken);
+    public Task SendMoveAsync(string uci) => SendMessage(new MoveRequestMessage { MoveUciNotation = uci });
 
     /// <summary>
     /// Отправить запрос на сдачу
     /// </summary>
-    public Task SendResignAsync() => bridge.SendMessage(new ResignRequestMessage(), cancellationToken: cancellationToken);
+    public Task SendResignAsync() => SendMessage(new ResignRequestMessage());
 
     /// <summary>
     /// Отправить запрос на ничью
     /// </summary>
-    public Task SendDrawAsync() => bridge.SendMessage(new DrawRequestMessage(), cancellationToken: cancellationToken);
+    public Task SendDrawAsync() => SendMessage(new DrawRequestMessage());
 
     /// <summary>
     /// Отправить запрос на рестарт
     /// </summary>
-    public Task SendRestartAsync() => bridge.SendMessage(new RestartRequestMessage(), cancellationToken: cancellationToken);
+    public Task SendRestartAsync() => SendMessage(new RestartRequestMessage());
 
     /// <summary>
     /// Отправить запрос на смену роли
     /// </summary>
-    public Task SendChangeRoleAsync() => bridge.SendMessage(new ChangeRoleRequestMessage(), cancellationToken: cancellationToken);
+    public Task SendChangeRoleAsync() => SendMessage(new ChangeRoleRequestMessage());
 
     /// <summary>
     /// Отправить оповещение о загрузке
     /// </summary>
-    public Task SendPlayerLoadedAsync() => bridge.SendMessage(new PlayerLoadedMessage(), cancellationToken: cancellationToken);
+    public Task SendPlayerLoadedAsync() => SendMessage(new PlayerLoadedMessage());
 
     /// <summary>
     /// Отправить настройки
@@ -80,4 +84,16 @@ internal class NetworkService
     public Task SendGameSettingsAsync(int? timerMin, int bonusSec) => bridge.SendMessage(
         new GameSettingsMessage { TimerInitialMinutes = timerMin, TimerBonusSeconds = bonusSec },
         cancellationToken: cancellationToken);
+
+    private async Task SendMessage(BaseNetworkMessage message)
+    {
+        try
+        {
+            await bridge.SendMessage(message, cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Произошла ошибка при отправке сообщения: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
 }

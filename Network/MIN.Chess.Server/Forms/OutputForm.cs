@@ -20,9 +20,6 @@ public partial class OutputForm : Form, ILoggerProvider
     {
         this.connectionString = connectionString;
         InitializeComponent();
-        SetupTrayIcon();
-        WindowState = FormWindowState.Minimized;
-        ShowInTaskbar = false;
     }
 
     private void SetupTrayIcon()
@@ -30,7 +27,7 @@ public partial class OutputForm : Form, ILoggerProvider
         trayIcon = new NotifyIcon
         {
             Icon = Resources.chesslogo,
-            Text = "Opencode Server",
+            Text = "Сервер шахмат",
             Visible = true
         };
 
@@ -47,7 +44,18 @@ public partial class OutputForm : Form, ILoggerProvider
 
     private async void OutputForm_Load(object sender, EventArgs e)
     {
+        WindowState = FormWindowState.Minimized;
+        ShowInTaskbar = false;
+        SetupTrayIcon();
+
         gameServerService = new(this);
         await gameServerService.InitializeNetworking(connectionString);
+    }
+
+    private void OutputForm_FormClosing(object sender, FormClosingEventArgs e)
+    {
+        gameServerService.StopService();
+        trayIcon?.Visible = false;
+        trayIcon?.Dispose();
     }
 }
