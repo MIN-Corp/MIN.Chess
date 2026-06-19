@@ -69,20 +69,23 @@ public class GameState
     /// <summary>
     /// Получить все кандидаты на ход
     /// </summary>
-    public IEnumerable<Position> PremovePositionsForPiece(Position position, Player? role = null)
+    public IEnumerable<Position> PremovePositionsForPiece(Position position, Player? role = null, Board? displayBoard = null)
     {
-        if (Board.IsEmpty(position))
+        var board = displayBoard ?? Board;
+
+        if (board.IsEmpty(position))
         {
             return [];
         }
 
-        if (role != null && role == Player.None)
+        var piece = board[position];
+
+        if ((role != null && role == Player.None) || piece?.Color != role)
         {
             return [];
         }
 
-        var piece = Board[position];
-        var premovePositions = piece?.GetPremovePositions(position, Board) ?? [];
+        var premovePositions = piece?.GetPremovePositions(position, board) ?? [];
         return premovePositions;
     }
 
@@ -163,6 +166,10 @@ public class GameState
         else if (ThreefoldRepetition())
         {
             Result = Models.Result.Draw(EndReason.ThreefoldRepetition);
+        }
+        if (Result != null)
+        {
+            cachedLegalMoves = null;
         }
     }
 

@@ -127,6 +127,7 @@ public partial class MainForm
                 ClearSelection();
                 CountPiecesCapturesForSelfAndOpponent();
                 SyncTimerValues(stateUpdateMessage.WhiteMs, stateUpdateMessage.BlackMs, gameState.CurrentPlayer);
+                RebuildDisplayBoard();
 
                 moveCache.Clear();
                 mainPanel.Invalidate();
@@ -314,7 +315,8 @@ public partial class MainForm
             premoves.Clear();
             moveCache.Clear();
             selectedPos = null;
-            mainPanel.Invalidate();
         }
+        RebuildDisplayBoard();
+        mainPanel.Invalidate();
     }
 }

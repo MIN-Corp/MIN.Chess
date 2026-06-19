@@ -31,6 +31,8 @@ public partial class MainForm
     private Point? dragCurrentCursor;
     private bool isDragging;
 
+    private Board? displayBoard;
+
     private void CalculateCellRectangles()
     {
         if (mainPanel.ClientSize.Width == 0 || mainPanel.ClientSize.Height == 0)
@@ -90,7 +92,7 @@ public partial class MainForm
             return;
         }
 
-        var board = gameState.Board;
+        var board = displayBoard ?? gameState.Board;
         for (var row = 0; row < 8; row++)
         {
             for (var col = 0; col < 8; col++)
@@ -132,7 +134,7 @@ public partial class MainForm
 
         if (pendingPromotionMove != null)
         {
-            var movingPiece = gameState.Board[pendingPromotionMove.FromPos.Row, pendingPromotionMove.FromPos.Column];
+            var movingPiece = board[pendingPromotionMove.FromPos.Row, pendingPromotionMove.FromPos.Column];
             if (movingPiece != null)
             {
                 var pieceImage = ImageHelper.GetImage(movingPiece);
@@ -144,12 +146,21 @@ public partial class MainForm
             }
         }
 
-        foreach (var (from, to, _) in premoves)
+        foreach (var (from, to, promotionType) in premoves)
         {
-            var movingPiece = gameState.Board[from.Row, from.Column];
+            var movingPiece = board[from.Row, from.Column];
             if (movingPiece != null)
             {
-                var pieceImage = ImageHelper.GetImage(movingPiece);
+                Bitmap? pieceImage;
+                if (promotionType != null)
+                {
+                    pieceImage = ImageHelper.GetImage(movingPiece.Color, promotionType.Value);
+                }
+                else
+                {
+                    pieceImage = ImageHelper.GetImage(movingPiece);
+                }
+
                 if (pieceImage != null)
                 {
                     var rect = cellRectangles[to.Row, to.Column];
@@ -218,6 +229,22 @@ public partial class MainForm
         }
     }
 
+    private void RebuildDisplayBoard()
+    {
+        if (gameState == null || premoves.Count == 0)
+        {
+            displayBoard = null;
+            return;
+        }
+
+        displayBoard = gameState.Board.Copy();
+        foreach (var (from, to, _) in premoves)
+        {
+            displayBoard[to.Row, to.Column] = displayBoard[from.Row, from.Column];
+            displayBoard[from.Row, from.Column] = null;
+        }
+    }
+
     private void MainPanel_MouseDown(object? sender, MouseEventArgs e)
     {
         if (e.Button != MouseButtons.Left || gameState == null || isDragging)
@@ -233,34 +260,7 @@ public partial class MainForm
 
         if (TryingToPremove())
         {
-            if (selectedPos != null && moveCache.ContainsKey(pos.Value))
-            {
-                return;
-            }
-
-            selectedPos = pos.Value;
-
-            var premovePositions = gameState.PremovePositionsForPiece(pos.Value, role);
-            moveCache.Clear();
-            foreach (var to in premovePositions)
-            {
-                moveCache[to] = null!;
-            }
-
-            var premovePiece = gameState.Board[selectedPos.Value.Row, selectedPos.Value.Column];
-            if (premovePiece == null)
-            {
-                ClearSelection();
-                return;
-            }
-
-            dragFromPos = selectedPos;
-            draggedPiece = premovePiece;
-            dragCurrentCursor = e.Location;
-            isDragging = true;
-
-            gameState.Board[selectedPos.Value.Row, selectedPos.Value.Column] = null;
-            mainPanel.Invalidate();
+            HandlePremove(pos.Value, e);
             return;
         }
 
@@ -293,6 +293,39 @@ public partial class MainForm
         mainPanel.Invalidate();
     }
 
+    private void HandlePremove(Position pos, MouseEventArgs e)
+    {
+        if (selectedPos != null && moveCache.ContainsKey(pos))
+        {
+            return;
+        }
+
+        selectedPos = pos;
+        displayBoard ??= gameState.Board.Copy();
+
+        var premovePiece = displayBoard[selectedPos.Value.Row, selectedPos.Value.Column];
+        if (premovePiece == null || (premovePiece != null && premovePiece.Color != role))
+        {
+            ClearSelection();
+            return;
+        }
+
+        var premovePositions = gameState.PremovePositionsForPiece(selectedPos.Value, role, displayBoard);
+        moveCache.Clear();
+        foreach (var to in premovePositions)
+        {
+            moveCache[to] = null!;
+        }
+
+        dragFromPos = selectedPos;
+        draggedPiece = premovePiece;
+        dragCurrentCursor = e.Location;
+        isDragging = true;
+
+        displayBoard[selectedPos.Value.Row, selectedPos.Value.Column] = null;
+        mainPanel.Invalidate();
+    }
+
     private void MainPanel_MouseMove(object? sender, MouseEventArgs e)
     {
         if (isDragging && draggedPiece != null)
@@ -305,78 +338,93 @@ public partial class MainForm
 
     private void MainPanel_MouseUp(object? sender, MouseEventArgs e)
     {
-        if (isDragging)
+        if (!isDragging)
         {
-            var dropPos = GetPositionFromPoint(e.Location);
+            HandleClick(e);
+            return;
+        }
 
+        var dropPos = GetPositionFromPoint(e.Location);
+
+        if (displayBoard == null)
+        {
             gameState!.Board[dragFromPos!.Value.Row, dragFromPos!.Value.Column] = draggedPiece;
+        }
 
-            if (TryingToPremove())
+        if (TryingToPremove())
+        {
+            if (dropPos == null || (dropPos != null && dropPos.Value == dragFromPos!.Value))
             {
-                if (dropPos == null || (dropPos != null && dropPos.Value == dragFromPos!.Value))
-                {
-                    ClearDrag();
-                    mainPanel.Invalidate();
-                    return;
-                }
-
-                var piece = draggedPiece;
-                var from = dragFromPos!.Value;
-                var to = dropPos!.Value;
-
-                if (moveCache.ContainsKey(dropPos.Value))
-                {
-                    if (piece?.Type == PieceType.Pawn && IsPromotionRank(to, piece.Color))
-                    {
-                        ShowPromotionDialogAndQueue(from, to, piece.Color);
-                    }
-                    else
-                    {
-                        premoves.Add((from, to, null));
-                    }
-                    ClearSelection();
-                }
-
+                displayBoard?[dragFromPos!.Value.Row, dragFromPos!.Value.Column] = draggedPiece;
                 ClearDrag();
                 mainPanel.Invalidate();
                 return;
             }
 
-            var handlePromotion = false;
-            var handleMoveDirect = false;
-            Move? moveToMake = null;
+            var piece = draggedPiece;
+            var from = dragFromPos!.Value;
+            var to = dropPos!.Value;
 
-            if (dropPos != null && moveCache.TryGetValue(dropPos.Value, out var move))
+            if (moveCache.ContainsKey(dropPos.Value))
             {
-                if (move.Type == MoveType.PawnPromotion)
+                displayBoard?[dropPos.Value.Row, dropPos.Value.Column] = draggedPiece;
+
+                if (piece?.Type == PieceType.Pawn && IsPromotionRank(to, piece.Color))
                 {
-                    handlePromotion = true;
+                    ShowPromotionDialogAndQueue(from, to, piece.Color);
                 }
                 else
                 {
-                    handleMoveDirect = true;
+                    premoves.Add((from, to, null));
                 }
-                moveToMake = move;
-            }
-
-            ClearDrag();
-
-            if (handlePromotion)
-            {
-                HandlePromotion(moveToMake!.FromPos, moveToMake.ToPos);
-            }
-            else if (handleMoveDirect && moveToMake != null)
-            {
-                HandleMove(moveToMake);
+                RebuildDisplayBoard();
+                ClearSelection();
             }
             else
             {
-                mainPanel.Invalidate();
+                displayBoard?[dragFromPos!.Value.Row, dragFromPos!.Value.Column] = draggedPiece;
             }
 
+            ClearDrag();
+            mainPanel.Invalidate();
             return;
         }
 
+        var handlePromotion = false;
+        var handleMoveDirect = false;
+        Move? moveToMake = null;
+
+        if (dropPos != null && moveCache.TryGetValue(dropPos.Value, out var move))
+        {
+            if (move.Type == MoveType.PawnPromotion)
+            {
+                handlePromotion = true;
+            }
+            else
+            {
+                handleMoveDirect = true;
+            }
+            moveToMake = move;
+        }
+
+        ClearDrag();
+
+        if (handlePromotion)
+        {
+            HandlePromotion(moveToMake!.FromPos, moveToMake.ToPos);
+        }
+        else if (handleMoveDirect && moveToMake != null)
+        {
+            HandleMove(moveToMake);
+        }
+        else
+        {
+            mainPanel.Invalidate();
+        }
+    }
+
+    private void HandleClick(MouseEventArgs e)
+    {
         var clickPos = GetPositionFromPoint(e.Location);
         if (clickPos == null)
         {
@@ -387,9 +435,10 @@ public partial class MainForm
         {
             OnFromPositionSelected(clickPos.Value);
         }
-        else if (gameState!.CurrentPlayer != role)
+        else if (TryingToPremove())
         {
-            var piece = gameState.Board[selectedPos.Value.Row, selectedPos.Value.Column];
+            var piece = displayBoard?[selectedPos.Value.Row, selectedPos.Value.Column]
+                ?? gameState.Board[selectedPos.Value.Row, selectedPos.Value.Column];
             var from = selectedPos.Value;
             var to = clickPos.Value;
 
@@ -403,6 +452,7 @@ public partial class MainForm
                 {
                     premoves.Add((from, to, null));
                 }
+                RebuildDisplayBoard();
                 selectedPos = null;
             }
 

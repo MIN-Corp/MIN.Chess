@@ -119,7 +119,9 @@ internal class GameService
 
         logger.Log("checking legalability . . .");
 
-        if (move.IsLegal(GameState.Board) && senderRole == GameState.CurrentPlayer)
+        var legalMoves = GameState.AllLegalMovesFor(senderRole);
+
+        if (legalMoves.Select(x => x.ToUci()).Contains(move.ToUci()) && senderRole == GameState.CurrentPlayer)
         {
             GameState.MakeMove(move);
             lastMove = move;
@@ -127,6 +129,7 @@ internal class GameService
         else
         {
             await messageService.SendErrorAsync(senderId, "Нелегальный ход");
+            await SendStateUpdate(senderId);
             return;
         }
 
@@ -239,12 +242,12 @@ internal class GameService
     /// <summary>
     /// Отправить обновление состояния всем участникам
     /// </summary>
-    public async Task SendStateUpdate()
+    public async Task SendStateUpdate(Guid? recepientId = null)
     {
         var (whiteMs, blackMs) = timerService.GetCurrentRemainingMs();
         logger.Log($"Sending state update: whiteMs={whiteMs}ms, blackMs={blackMs}ms");
 
-        await messageService.BroadcastAsync(new StateUpdateMessage()
+        var stateUpdate = new StateUpdateMessage()
         {
             StateString = GameState.ToString(),
             CurrentTurn = GameState.CurrentPlayer,
@@ -252,6 +255,14 @@ internal class GameService
             WhiteMs = timerService.TimerEnabled ? whiteMs : null,
             BlackMs = timerService.TimerEnabled ? blackMs : null,
             TimerBonusSeconds = timerService.TimerBonusMs / 1000
-        });
+        };
+
+        if (recepientId != null)
+        {
+            await messageService.SendToAsync(stateUpdate, recepientId.Value);
+            return;
+        }
+
+        await messageService.BroadcastAsync(stateUpdate);
     }
 }
