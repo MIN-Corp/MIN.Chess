@@ -371,6 +371,10 @@ public partial class MainForm
         {
             if (dropPos == null || (dropPos != null && dropPos.Value == dragFromPos!.Value))
             {
+                if (premoves.Count == 0)
+                {
+                    displayBoard = null;
+                }
                 displayBoard?[dragFromPos!.Value.Row, dragFromPos!.Value.Column] = draggedPiece;
                 ClearDrag();
                 mainPanel.Invalidate();
