@@ -182,6 +182,7 @@ internal class GameService
     public void Restart()
     {
         GameState.Result = null;
+        GameState.ClearCache();
         lastMove = null;
         GameStarted = false;
         gameOverResultSent = false;

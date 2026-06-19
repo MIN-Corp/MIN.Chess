@@ -69,7 +69,6 @@ namespace MIN.Chess.Client.Forms
             buttonBonusNext = new Button();
             timerBonusLabel = new MIN.Chess.Client.Components.Labels.Heading3Label();
             buttonSaveSettings = new MIN.Chess.Client.Components.Buttons.InvertedButton();
-            debgugListBox = new ListBox();
             tableLayoutPanel.SuspendLayout();
             tableLayoutPanelSpectating.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)spectatorLogo).BeginInit();
@@ -102,7 +101,6 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanel.Controls.Add(flowLayoutPanelVotes, 2, 3);
             tableLayoutPanel.Controls.Add(flowLayoutPanelSettings, 0, 2);
             tableLayoutPanel.Controls.Add(buttonSaveSettings, 0, 3);
-            tableLayoutPanel.Controls.Add(debgugListBox, 2, 2);
             tableLayoutPanel.Dock = DockStyle.Fill;
             tableLayoutPanel.Location = new Point(0, 0);
             tableLayoutPanel.Margin = new Padding(0);
@@ -572,16 +570,6 @@ namespace MIN.Chess.Client.Forms
             buttonSaveSettings.UseVisualStyleBackColor = false;
             buttonSaveSettings.Click += buttonSaveSettings_Click;
             // 
-            // debgugListBox
-            // 
-            debgugListBox.Dock = DockStyle.Fill;
-            debgugListBox.FormattingEnabled = true;
-            debgugListBox.ItemHeight = 15;
-            debgugListBox.Location = new Point(807, 99);
-            debgugListBox.Name = "debgugListBox";
-            debgugListBox.Size = new Size(174, 381);
-            debgugListBox.TabIndex = 15;
-            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -661,6 +649,5 @@ namespace MIN.Chess.Client.Forms
         private Components.Labels.Heading3Label selfTimerLabel;
         private Panel selfCapturesPanel;
         private Panel opponentCapturesPanel;
-        private ListBox debgugListBox;
     }
 }

@@ -135,6 +135,14 @@ public class GameState
     public bool IsGameOver() => Result != null;
 
     /// <summary>
+    /// Очистить кэш
+    /// </summary>
+    public void ClearCache()
+    {
+        cachedLegalMoves = null;
+    }
+
+    /// <summary>
     /// Сработало ли правило пятидесяти ходов
     /// </summary>
     public bool FiftyMoveRule() => (noCapturesOrPawnMoves / 2) == 50;
@@ -166,10 +174,6 @@ public class GameState
         else if (ThreefoldRepetition())
         {
             Result = Models.Result.Draw(EndReason.ThreefoldRepetition);
-        }
-        if (Result != null)
-        {
-            cachedLegalMoves = null;
         }
     }
 

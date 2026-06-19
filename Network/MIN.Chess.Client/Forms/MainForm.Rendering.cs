@@ -148,8 +148,25 @@ public partial class MainForm
 
         foreach (var (from, to, promotionType) in premoves)
         {
-            var movingPiece = board[from.Row, from.Column];
+            Piece? movingPiece = null;
+            Position? drawPosition = null;
+
+            movingPiece = board[from.Row, from.Column];
+
             if (movingPiece != null)
+            {
+                drawPosition = from;
+            }
+            else
+            {
+                movingPiece = board[to.Row, to.Column];
+                if (movingPiece != null)
+                {
+                    drawPosition = to;
+                }
+            }
+
+            if (movingPiece != null && drawPosition.HasValue)
             {
                 Bitmap? pieceImage;
                 if (promotionType != null)
@@ -163,8 +180,7 @@ public partial class MainForm
 
                 if (pieceImage != null)
                 {
-                    var rect = cellRectangles[to.Row, to.Column];
-                    g.DrawImage(pieceImage, rect);
+                    g.DrawImage(pieceImage, cellRectangles[drawPosition.Value.Row, drawPosition.Value.Column]);
                 }
             }
         }
