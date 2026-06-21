@@ -21,6 +21,7 @@
   <Folder Name="/Network/Ipc/Transport/">
     <Project Path="Network/Ipc/Transport/MIN.Chess.Ipc.Transport.Contracts/MIN.Ipc.Transport.Contracts.csproj" Id="3f8cd6be-f74e-445f-bee8-4242b41b22d0" />
     <Project Path="Network/Ipc/Transport/MIN.Ipc.Transport.NamedPipes/MIN.Ipc.Transport.NamedPipes.csproj" Id="de496239-1bef-427b-af64-143ab804c556" />
+    <Project Path="Network/Ipc/Transport/MIN.Ipc.Transport.Tcp/MIN.Ipc.Transport.Tcp.csproj" Id="6a1a3bb0-7c18-4ce3-bc7b-0686e3a36c7d" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />

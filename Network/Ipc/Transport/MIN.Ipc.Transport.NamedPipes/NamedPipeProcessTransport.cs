@@ -7,9 +7,7 @@ using MIN.Ipc.Transport.Contracts.Models;
 
 namespace MIN.Ipc.Transport.NamedPipes;
 
-/// <summary>
-/// <inheritdoc cref="IProcessClientTransport"/>
-/// </summary>
+/// <inheritdoc cref="IProcessClientTransport"/> на основе Named Pipes (Только для Windows)
 public sealed class NamedPipeProcessClientTransport : IProcessClientTransport
 {
     private readonly CancellationTokenSource cts = new();
@@ -102,4 +100,3 @@ public sealed class NamedPipeProcessClientTransport : IProcessClientTransport
     /// <inheritdoc cref="IAsyncDisposable.DisposeAsync"/>
     async ValueTask IAsyncDisposable.DisposeAsync() => await DisconnectAsync();
 }
-

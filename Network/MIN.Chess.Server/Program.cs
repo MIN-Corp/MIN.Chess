@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using MIN.Chess.Server.Forms;
 
 namespace MIN.Chess.Server
@@ -13,7 +12,7 @@ namespace MIN.Chess.Server
         {
             if (args.Length == 0)
             {
-                Debug.WriteLine("Client requires MIN connection args");
+                Console.WriteLine("Client requires MIN connection args");
                 return;
             }
 

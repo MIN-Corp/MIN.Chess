@@ -8,7 +8,6 @@ using MIN.Ipc.Services.Contracts.Interfaces;
 using MIN.Ipc.Services.Contracts.Models;
 using MIN.Ipc.Transport.Contracts.Enums;
 using MIN.Ipc.Transport.Contracts.Interfaces;
-using MIN.Ipc.Transport.NamedPipes;
 
 namespace MIN.Ipc.Services;
 
@@ -18,12 +17,12 @@ namespace MIN.Ipc.Services;
 public class ClientProcessBridge : IClientProcessBridge
 {
     private readonly IIpcSerializer ipcSerializer = new IpcJsonSerializer();
-    private readonly IProcessClientTransport processTransport = new NamedPipeProcessClientTransport();
     private readonly NetworkMessageSerializerRegistry registry = new();
+    private IProcessClientTransport? processTransport;
 
     Task IClientProcessBridge.StartListeningAsync(CancellationToken cancellationToken)
     {
-        processTransport.MessageReceived += OnTransportMessage;
+        processTransport?.MessageReceived += OnTransportMessage;
         return Task.CompletedTask;
     }
 
@@ -84,6 +83,7 @@ public class ClientProcessBridge : IClientProcessBridge
     {
         var connectCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         connectCts.CancelAfter(timeOutMs);
+        processTransport = SessionProcessTransportFactory.Create(connectionString);
         await processTransport.ConnectAsync(connectionString, connectCts.Token);
     }
 
@@ -101,6 +101,11 @@ public class ClientProcessBridge : IClientProcessBridge
     /// <inheritdoc />
     private async Task SendIpcMessage(IpcMessage message, Guid? RecipientId, IEnumerable<Guid>? BroadcastExcludeIds, CancellationToken cancellationToken)
     {
+        if (processTransport == null)
+        {
+            return;
+        }
+
         var messageData = ipcSerializer.Serialize(message);
         var envelope = new IpcProcessMessageEnvelope()
         {
@@ -129,7 +134,7 @@ public class ClientProcessBridge : IClientProcessBridge
 
     Task IClientProcessBridge.StopListeningAsync(CancellationToken cancellationToken)
     {
-        processTransport.MessageReceived -= OnTransportMessage;
+        processTransport?.MessageReceived -= OnTransportMessage;
         return Task.CompletedTask;
     }
 }
