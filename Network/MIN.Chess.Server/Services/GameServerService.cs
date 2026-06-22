@@ -22,6 +22,8 @@ internal class GameServerService
     private readonly CancellationTokenSource appCts = new();
     private const int ConnectionTimeoutMs = 5_000;
 
+    public event Action? CloseRequested;
+
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="GameServerService"/>
     /// </summary>
@@ -50,6 +52,7 @@ internal class GameServerService
             bridge.NetworkMessageReceived += NetworkMessageReceived;
             bridge.ParticipantConnected += ParticipantConnected;
             bridge.ParticipantDisconnected += ParticipantDisconnected;
+            bridge.CloseRequested += (_, _) => CloseRequested?.Invoke();
 
             await bridge.StartListeningAsync(appCts.Token);
 

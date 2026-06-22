@@ -17,6 +17,7 @@ public partial class MainForm : Form
     public MainForm(IClientProcessBridge bridge, CancellationTokenSource appCts, string connectionString)
     {
         network = new(bridge, appCts.Token);
+        network.CloseRequested += Close;
 
         uiContext = SynchronizationContext.Current
             ?? new SynchronizationContext();

@@ -56,7 +56,6 @@ public partial class MainForm
     {
         if (gameState == null && (message is not InitResponseMessage))
         {
-            MessageBox.Show($"Got other message rather then init: {message.GetType()}");
             return;
         }
 

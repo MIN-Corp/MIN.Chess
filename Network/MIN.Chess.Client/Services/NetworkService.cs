@@ -19,6 +19,11 @@ internal class NetworkService
     public event Action<string>? ConnectionFailed;
 
     /// <summary>
+    /// Поступила просьба закрыть приложение
+    /// </summary>
+    public event Action? CloseRequested;
+
+    /// <summary>
     /// Инициализирует новый экземпляр <see cref="NetworkService"/>
     /// </summary>
     public NetworkService(IClientProcessBridge bridge, CancellationToken cancellationToken)
@@ -37,6 +42,7 @@ internal class NetworkService
             bridge.RegisterAllFromAnchor<IChessMessagesAnchor>();
             await bridge.ConnectAsync(connectionString, ConnectionTimeoutMs, cancellationToken);
             bridge.NetworkMessageReceived += (_, m) => MessageReceived?.Invoke(m);
+            bridge.CloseRequested += (_, _) => CloseRequested?.Invoke();
             await bridge.StartListeningAsync(cancellationToken);
             await bridge.SendReadyMessage(cancellationToken);
         }

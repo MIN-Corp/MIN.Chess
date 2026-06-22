@@ -49,6 +49,7 @@ public partial class OutputForm : Form, ILoggerProvider
         SetupTrayIcon();
 
         gameServerService = new(this);
+        gameServerService.CloseRequested += Close;
         await gameServerService.InitializeNetworking(connectionString);
     }
 

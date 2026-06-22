@@ -1,4 +1,5 @@
-﻿using MIN.Ipc.Services.Contracts.Models;
+﻿using MIN.Ipc.Messages.Contracts.Enums;
+using MIN.Ipc.Services.Contracts.Models;
 
 namespace MIN.Ipc.Services.Contracts.Interfaces;
 
@@ -44,9 +45,15 @@ public interface IClientProcessBridge
     event EventHandler<Guid>? ParticipantDisconnected;
 
     /// <summary>
+    /// Поступила просьба закрыть приложение
+    /// </summary>
+    event EventHandler? CloseRequested;
+
+    /// <summary>
     /// Отправить сообщение по сети
     /// </summary>
-    Task SendMessage<T>(T message, Guid? RecipientId = null, IEnumerable<Guid>? BroadcastExcludeIds = null, string? msgType = null, CancellationToken cancellationToken = default)
+    Task SendMessage<T>(T message, string? msgType = null, SessionMessageRoute route = SessionMessageRoute.ViaServer,
+        Guid? RecipientId = null, IEnumerable<Guid>? BroadcastExcludeIds = null, CancellationToken cancellationToken = default)
         where T : class, INetworkMessage;
 
     /// <summary>
