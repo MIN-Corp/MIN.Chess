@@ -33,6 +33,17 @@ public partial class MainForm : Form
         resignButton.BackColor = Color.Black;
         drawButton.BackColor = Color.Black;
         pauseButton.BackColor = Color.Black;
+        updateStateButton.BackColor = Color.Black;
+        var updateTooltip = new ToolTip
+        {
+            InitialDelay = 1000,
+            ReshowDelay = 500,
+            ShowAlways = true,
+            IsBalloon = true,
+            ToolTipIcon = ToolTipIcon.Info,
+            ToolTipTitle = "Действие"
+        };
+        updateTooltip.SetToolTip(updateStateButton, "Обновить состояние (если какие-то баги)");
 
         UpdateTimerChoosingDisplay();
         UpdateBonusChoosingDisplay();

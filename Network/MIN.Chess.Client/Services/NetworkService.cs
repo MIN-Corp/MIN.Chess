@@ -75,6 +75,11 @@ internal class NetworkService
     public Task SendRestartAsync() => SendMessage(new RestartRequestMessage());
 
     /// <summary>
+    /// Отправить запрос на обновление состояния
+    /// </summary>
+    public Task SendStateUpdateRequestAsync() => SendMessage(new StateUpdateRequestMessage());
+
+    /// <summary>
     /// Отправить запрос на смену роли
     /// </summary>
     public Task SendChangeRoleAsync() => SendMessage(new ChangeRoleRequestMessage());

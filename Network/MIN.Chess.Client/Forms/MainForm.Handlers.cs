@@ -21,6 +21,11 @@ public partial class MainForm
         ShowPauseMenu();
     }
 
+    private async void updateStateButton_Click(object sender, EventArgs e)
+    {
+        await network.SendStateUpdateRequestAsync();
+    }
+
     private async void restartQuote_Click(object sender, EventArgs e)
     {
         await network.SendRestartAsync();

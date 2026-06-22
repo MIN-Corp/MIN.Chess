@@ -38,6 +38,7 @@ namespace MIN.Chess.Client.Forms
             spectatorsCounter = new MIN.Chess.Client.Components.Labels.Heading1Label();
             spectatorLogo = new PictureBox();
             tableLayoutPanelButtons = new TableLayoutPanel();
+            updateStateButton = new Button();
             drawButton = new Button();
             pauseButton = new Button();
             resignButton = new Button();
@@ -181,6 +182,7 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanelButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42F));
             tableLayoutPanelButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tableLayoutPanelButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42F));
+            tableLayoutPanelButtons.Controls.Add(updateStateButton, 2, 0);
             tableLayoutPanelButtons.Controls.Add(drawButton, 1, 0);
             tableLayoutPanelButtons.Controls.Add(pauseButton, 3, 0);
             tableLayoutPanelButtons.Controls.Add(resignButton, 0, 0);
@@ -190,6 +192,18 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanelButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tableLayoutPanelButtons.Size = new Size(174, 42);
             tableLayoutPanelButtons.TabIndex = 6;
+            // 
+            // updateStateButton
+            // 
+            updateStateButton.BackgroundImage = Properties.Resources.download;
+            updateStateButton.BackgroundImageLayout = ImageLayout.Zoom;
+            updateStateButton.ForeColor = Color.Black;
+            updateStateButton.Location = new Point(87, 3);
+            updateStateButton.Name = "updateStateButton";
+            updateStateButton.Size = new Size(36, 36);
+            updateStateButton.TabIndex = 12;
+            updateStateButton.UseVisualStyleBackColor = true;
+            updateStateButton.Click += updateStateButton_Click;
             // 
             // drawButton
             // 
@@ -649,5 +663,6 @@ namespace MIN.Chess.Client.Forms
         private Components.Labels.Heading3Label selfTimerLabel;
         private Panel selfCapturesPanel;
         private Panel opponentCapturesPanel;
+        private Button updateStateButton;
     }
 }

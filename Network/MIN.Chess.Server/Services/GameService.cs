@@ -91,12 +91,7 @@ internal class GameService
     {
         logger.Log("StateUpdateRequestMessage received");
         logger.Log($"sending gamestate {GameState.ToString()}");
-        await messageService.BroadcastExcludingAsync(new StateUpdateMessage()
-        {
-            StateString = GameState.ToString(),
-            CurrentTurn = GameState.CurrentPlayer,
-            LastMove = lastMove?.ToUci(),
-        }, Guid.Parse(message.SenderId));
+        await SendStateUpdate(Guid.Parse(message.SenderId));
     }
 
     /// <summary>
@@ -252,7 +247,7 @@ internal class GameService
         {
             StateString = GameState.ToString(),
             CurrentTurn = GameState.CurrentPlayer,
-            LastMove = null,
+            LastMove = lastMove?.ToUci(),
             WhiteMs = timerService.TimerEnabled ? whiteMs : null,
             BlackMs = timerService.TimerEnabled ? blackMs : null,
             TimerBonusSeconds = timerService.TimerBonusMs / 1000
