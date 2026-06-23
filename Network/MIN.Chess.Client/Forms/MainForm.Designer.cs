@@ -594,7 +594,7 @@ namespace MIN.Chess.Client.Forms
             Controls.Add(tableLayoutPanel);
             DoubleBuffered = true;
             Icon = (Icon)resources.GetObject("$this.Icon");
-            MinimumSize = new Size(600, 200);
+            MinimumSize = new Size(540, 200);
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "MIN - Шахматы";

@@ -34,16 +34,19 @@ public partial class MainForm : Form
         drawButton.BackColor = Color.Black;
         pauseButton.BackColor = Color.Black;
         updateStateButton.BackColor = Color.Black;
-        var updateTooltip = new ToolTip
+        var buttonsToolTip = new ToolTip
         {
             InitialDelay = 1000,
             ReshowDelay = 500,
             ShowAlways = true,
             IsBalloon = true,
             ToolTipIcon = ToolTipIcon.Info,
-            ToolTipTitle = "Действие"
+            ToolTipTitle = "Партия"
         };
-        updateTooltip.SetToolTip(updateStateButton, "Обновить состояние (если какие-то баги)");
+        buttonsToolTip.SetToolTip(resignButton, "Сдаться");
+        buttonsToolTip.SetToolTip(drawButton, "Предложить ничью");
+        buttonsToolTip.SetToolTip(pauseButton, "Пауза");
+        buttonsToolTip.SetToolTip(updateStateButton, "Обновить состояние (если какие-то баги)");
 
         UpdateTimerChoosingDisplay();
         UpdateBonusChoosingDisplay();

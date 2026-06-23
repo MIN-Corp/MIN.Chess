@@ -311,16 +311,19 @@ public partial class MainForm
 
     private void HandlePremove(Position pos, MouseEventArgs e)
     {
-        if (selectedPos != null && moveCache.ContainsKey(pos))
+        displayBoard ??= gameState.Board.Copy();
+        var premovePiece = displayBoard[pos.Row, pos.Column];
+        var isNotAllowedToMove = premovePiece == null || (premovePiece != null && premovePiece.Color != role);
+
+        if ((selectedPos != null || moveCache.ContainsKey(pos)) && isNotAllowedToMove)
         {
+            isDragging = false;
             return;
         }
 
         selectedPos = pos;
-        displayBoard ??= gameState.Board.Copy();
 
-        var premovePiece = displayBoard[selectedPos.Value.Row, selectedPos.Value.Column];
-        if (premovePiece == null || (premovePiece != null && premovePiece.Color != role))
+        if (isNotAllowedToMove)
         {
             ClearSelection();
             return;
@@ -398,13 +401,13 @@ public partial class MainForm
                     premoves.Add((from, to, null));
                 }
                 RebuildDisplayBoard();
-                ClearSelection();
             }
             else
             {
                 displayBoard?[dragFromPos!.Value.Row, dragFromPos!.Value.Column] = draggedPiece;
             }
 
+            ClearSelection();
             ClearDrag();
             mainPanel.Invalidate();
             return;
@@ -473,10 +476,9 @@ public partial class MainForm
                     premoves.Add((from, to, null));
                 }
                 RebuildDisplayBoard();
-                selectedPos = null;
             }
 
-            moveCache.Clear();
+            ClearSelection();
             mainPanel.Invalidate();
         }
         else
