@@ -50,6 +50,10 @@ public class Queen : Piece
         => MovePositionsInDirs(from, board, dirs).Select(to => new NormalMove(from, to));
 
     /// <inheritdoc />
+    public override IEnumerable<Position> GetPremovePositions(Position from, Board board)
+        => PremovePositionsInDirs(from, board, dirs);
+
+    /// <inheritdoc />
     public override bool CanCaptureOpponentKing(Position from, Board board)
     {
         foreach (var dir in dirs)

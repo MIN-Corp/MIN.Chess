@@ -17,17 +17,17 @@ public class GameState
     /// <summary>
     /// Доска с фигурами
     /// </summary>
-    public Board Board { get; }
+    public Board Board { get; set; }
 
     /// <summary>
     /// Текущий ход
     /// </summary>
-    public Player CurrentPlayer { get; private set; }
+    public Player CurrentPlayer { get; set; }
 
     /// <summary>
     /// Результат игры
     /// </summary>
-    public Result? Result { get; private set; }
+    public Result? Result { get; set; }
 
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="GameState"/>
@@ -37,16 +37,26 @@ public class GameState
         Board = board;
         CurrentPlayer = currentPlayer;
 
-        stateString = new StateString(CurrentPlayer, board).ToString();
+        stateString = new StateString(CurrentPlayer, Board).ToString();
         stateHistory[stateString] = 1;
     }
 
     /// <summary>
+    /// Превратить состояние игры в строку
+    /// </summary>
+    public override string ToString() => new StateString(CurrentPlayer, Board).ToString();
+
+    /// <summary>
     /// Получить все доступные позиции для фигуры
     /// </summary>
-    public IEnumerable<Move> LegalMovesForPiece(Position position)
+    public IEnumerable<Move> LegalMovesForPiece(Position position, Player? role = null)
     {
         if (Board.IsEmpty(position) || Board[position]?.Color != CurrentPlayer)
+        {
+            return [];
+        }
+
+        if (role != null && (role != CurrentPlayer || role == Player.None))
         {
             return [];
         }
@@ -54,6 +64,29 @@ public class GameState
         var piece = Board[position];
         var movesCandidates = piece?.GetMoves(position, Board) ?? [];
         return movesCandidates.Where(x => x.IsLegal(Board));
+    }
+
+    /// <summary>
+    /// Получить все кандидаты на ход
+    /// </summary>
+    public IEnumerable<Position> PremovePositionsForPiece(Position position, Player? role = null, Board? displayBoard = null)
+    {
+        var board = displayBoard ?? Board;
+
+        if (board.IsEmpty(position))
+        {
+            return [];
+        }
+
+        var piece = board[position];
+
+        if ((role != null && role == Player.None) || piece?.Color != role)
+        {
+            return [];
+        }
+
+        var premovePositions = piece?.GetPremovePositions(position, board) ?? [];
+        return premovePositions;
     }
 
     /// <summary>
@@ -77,7 +110,6 @@ public class GameState
         CurrentPlayer = CurrentPlayer.Opponent();
         UpdateStateString();
         cachedLegalMoves = GenerateAllLegalMoves(CurrentPlayer);
-        CheckForGameOver(cachedLegalMoves);
     }
 
     private IEnumerable<Move> GenerateAllLegalMoves(Player player)
@@ -103,13 +135,24 @@ public class GameState
     public bool IsGameOver() => Result != null;
 
     /// <summary>
+    /// Очистить кэш
+    /// </summary>
+    public void ClearCache()
+    {
+        cachedLegalMoves = null;
+    }
+
+    /// <summary>
     /// Сработало ли правило пятидесяти ходов
     /// </summary>
     public bool FiftyMoveRule() => (noCapturesOrPawnMoves / 2) == 50;
 
-    private void CheckForGameOver(IEnumerable<Move> movesToCheck)
+    /// <summary>
+    /// Проверить на окончание игры
+    /// </summary>
+    public void CheckForGameOver()
     {
-        if (!movesToCheck.Any())
+        if (!cachedLegalMoves?.Any() == true)
         {
             if (Board.IsInCheck(CurrentPlayer))
             {

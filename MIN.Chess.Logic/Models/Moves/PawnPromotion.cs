@@ -1,4 +1,5 @@
 ﻿using MIN.Chess.Logic.Enums;
+using MIN.Chess.Logic.Extensions;
 using MIN.Chess.Logic.Models.Coordination;
 using MIN.Chess.Logic.Models.Pieces;
 
@@ -7,7 +8,10 @@ namespace MIN.Chess.Logic.Models.Moves;
 /// <inheritdoc cref="MoveType.PawnPromotion"/>
 public class PawnPromotion : Move
 {
-    private readonly PieceType newType;
+    /// <summary>
+    /// Новый тип фигуры
+    /// </summary>
+    public PieceType NewType;
 
     /// <inheritdoc />
     public override MoveType Type => MoveType.PawnPromotion;
@@ -25,17 +29,20 @@ public class PawnPromotion : Move
     {
         FromPos = from;
         ToPos = to;
-        this.newType = newType;
+        NewType = newType;
     }
 
     private Piece CreatePromotionPiece(Player color)
-        => newType switch
+        => NewType switch
         {
             PieceType.Knight => new Knight(color),
             PieceType.Bishop => new Bishop(color),
             PieceType.Rook => new Rook(color),
             _ => new Queen(color)
         };
+
+    /// <inheritdoc />
+    public override string ToUci() => FromPos.ToUci() + ToPos.ToUci() + NewType.ToUciChar();
 
     /// <inheritdoc />
     public override bool Execute(Board board)

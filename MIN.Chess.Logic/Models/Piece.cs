@@ -64,6 +64,33 @@ public abstract class Piece
         => dirs.SelectMany(x => MovePositionsInDir(from, board, x));
 
     /// <summary>
+    /// Получить премувы в направлении
+    /// </summary>
+    protected IEnumerable<Position> PremovePositionsInDir(Position from, Board board, Direction dir)
+    {
+        for (Position pos = from + dir; Board.IsInside(pos); pos += dir)
+        {
+            yield return pos;
+            if (!board.IsEmpty(pos))
+            {
+                yield break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Получить премувы в заданных направлениях
+    /// </summary>
+    protected IEnumerable<Position> PremovePositionsInDirs(Position from, Board board, Direction[] dirs)
+        => dirs.SelectMany(x => PremovePositionsInDir(from, board, x));
+
+    /// <summary>
+    /// Получить все премувы фигуры
+    /// </summary>
+    public virtual IEnumerable<Position> GetPremovePositions(Position from, Board board)
+        => GetMoves(from, board).Select(m => m.ToPos);
+
+    /// <summary>
     /// Атакует ли фигура короля
     /// </summary>
     public virtual bool CanCaptureOpponentKing(Position from, Board board)

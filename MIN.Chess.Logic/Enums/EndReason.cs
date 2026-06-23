@@ -11,7 +11,22 @@ public enum EndReason
     CheckMate,
 
     /// <summary>
+    /// Сдача
+    /// </summary>
+    Resign,
+
+    /// <summary>
+    /// Вышло время
+    /// </summary>
+    Timeout,
+
+    /// <summary>
     /// Ничья
+    /// </summary>
+    Draw,
+
+    /// <summary>
+    /// Нету доступных ходов
     /// </summary>
     StaleMate,
 

@@ -12,7 +12,6 @@ namespace MIN.Chess.Logic.Models;
 public class Board
 {
     private readonly Piece?[,] pieces = new Piece[8, 8];
-
     private readonly Dictionary<Player, Position?> pawnSkipPositions = new()
     {
         { Player.White, null },
@@ -56,30 +55,160 @@ public class Board
         return board;
     }
 
+    /// <summary>
+    /// Начальная позициая на доске
+    /// </summary>
+    /// <param name="player">Для кого инициализировать доску</param>
+    public static Board Initial(Player player)
+    {
+        var board = new Board();
+        board.AddStartPieces(player);
+        return board;
+    }
+
+    /// <summary>
+    /// Посчитать фигуры
+    /// </summary>
+    public int CountOf(Player player, PieceType type)
+        => PiecePositionsFor(player).Count(x => this[x]?.Type == type);
+
+    /// <summary>
+    /// Получить доску от состояния в виде строки
+    /// </summary>
+    public static Board FromStateString(string stateString)
+    {
+        var parts = stateString.Split(' ');
+        var placement = parts[0];
+        var activeColor = parts[1];       // "w" or "b"
+        var castling = parts.Length > 2 ? parts[2] : "-";
+        var enPassant = parts.Length > 3 ? parts[3] : "-";
+
+        var board = new Board();
+
+        // 1. Расстановка фигур
+        var rows = placement.Split('/');
+        for (var r = 0; r < 8; r++)
+        {
+            var c = 0;
+            foreach (var ch in rows[r])
+            {
+                if (char.IsDigit(ch))
+                {
+                    c += ch - '0';
+                    continue;
+                }
+
+                var color = char.IsUpper(ch) ? Player.White : Player.Black;
+                var pieceType = char.ToLower(ch) switch
+                {
+                    'p' => PieceType.Pawn,
+                    'n' => PieceType.Knight,
+                    'b' => PieceType.Bishop,
+                    'r' => PieceType.Rook,
+                    'q' => PieceType.Queen,
+                    'k' => PieceType.King,
+                    _ => throw new ArgumentException($"Unknown piece: {ch}"),
+                };
+
+                var pos = new Position(r, c);
+                board[pos] = CreatePiece(pieceType, color);
+                c++;
+            }
+        }
+
+        // 2. HasMoved для короля и ладей — по флагам рокировки
+        var canCastleK = castling.Contains('K');
+        var canCastleQ = castling.Contains('Q');
+        var canCastlek = castling.Contains('k');
+        var canCastleq = castling.Contains('q');
+
+        SetHasMovedForKingAndRook(board, Player.White, canCastleK, canCastleQ);
+        SetHasMovedForKingAndRook(board, Player.Black, canCastlek, canCastleq);
+
+        // 3. En passant
+        if (enPassant != "-")
+        {
+            var file = enPassant[0] - 'a';
+            var rank = 8 - (enPassant[1] - '0');
+            var targetPos = new Position(rank, file);
+            var currentPlayer = activeColor == "w" ? Player.White : Player.Black;
+            board.SetPawnSkipPosition(currentPlayer.Opponent(), targetPos);
+        }
+
+        return board;
+    }
+
+    private static Piece CreatePiece(PieceType type, Player color) => type switch
+    {
+        PieceType.Pawn => new Pawn(color),
+        PieceType.Knight => new Knight(color),
+        PieceType.Bishop => new Bishop(color),
+        PieceType.Rook => new Rook(color),
+        PieceType.Queen => new Queen(color),
+        PieceType.King => new King(color),
+        _ => throw new ArgumentException($"Unknown type: {type}"),
+    };
+
+    private static void SetHasMovedForKingAndRook(Board board, Player color, bool canCastleK, bool canCastleQ)
+    {
+        var backRank = color == Player.White ? 7 : 0;
+
+        var kingPos = new Position(backRank, 4);
+        var king = board[kingPos] as King;
+        king?.HasMoved = !canCastleK && !canCastleQ;
+
+        var rookHPos = new Position(backRank, 7);
+        if (board[rookHPos] is Rook rookH && !canCastleK)
+        {
+            rookH.HasMoved = true;
+        }
+
+        var rookAPos = new Position(backRank, 0);
+        if (board[rookAPos] is Rook rookA && !canCastleQ)
+        {
+            rookA.HasMoved = true;
+        }
+    }
+
     private void AddStartPieces()
     {
-        this[0, 0] = new Rook(Player.Black);
-        this[0, 1] = new Knight(Player.Black);
-        this[0, 2] = new Bishop(Player.Black);
-        this[0, 3] = new Queen(Player.Black);
-        this[0, 4] = new King(Player.Black);
-        this[0, 5] = new Bishop(Player.Black);
-        this[0, 6] = new Knight(Player.Black);
-        this[0, 7] = new Rook(Player.Black);
+        AddStartPieces(Player.White);
+        AddStartPieces(Player.Black);
+    }
 
-        this[7, 0] = new Rook(Player.White);
-        this[7, 1] = new Knight(Player.White);
-        this[7, 2] = new Bishop(Player.White);
-        this[7, 3] = new Queen(Player.White);
-        this[7, 4] = new King(Player.White);
-        this[7, 5] = new Bishop(Player.White);
-        this[7, 6] = new Knight(Player.White);
-        this[7, 7] = new Rook(Player.White);
-
-        for (var i = 0; i < 8; i++)
+    private void AddStartPieces(Player player)
+    {
+        if (player == Player.Black)
         {
-            this[1, i] = new Pawn(Player.Black);
-            this[6, i] = new Pawn(Player.White);
+            this[0, 0] = new Rook(Player.Black);
+            this[0, 1] = new Knight(Player.Black);
+            this[0, 2] = new Bishop(Player.Black);
+            this[0, 3] = new Queen(Player.Black);
+            this[0, 4] = new King(Player.Black);
+            this[0, 5] = new Bishop(Player.Black);
+            this[0, 6] = new Knight(Player.Black);
+            this[0, 7] = new Rook(Player.Black);
+
+            for (var i = 0; i < 8; i++)
+            {
+                this[1, i] = new Pawn(Player.Black);
+            }
+        }
+        else
+        {
+            this[7, 0] = new Rook(Player.White);
+            this[7, 1] = new Knight(Player.White);
+            this[7, 2] = new Bishop(Player.White);
+            this[7, 3] = new Queen(Player.White);
+            this[7, 4] = new King(Player.White);
+            this[7, 5] = new Bishop(Player.White);
+            this[7, 6] = new Knight(Player.White);
+            this[7, 7] = new Rook(Player.White);
+
+            for (var i = 0; i < 8; i++)
+            {
+                this[6, i] = new Pawn(Player.White);
+            }
         }
     }
 
@@ -263,7 +392,12 @@ public class Board
     /// </summary>
     public bool CanCaptureEnPassant(Player player)
     {
-        var skipPos = GetPawnSkipPosition(player);
+        if (player == Player.None)
+        {
+            return false;
+        }
+
+        var skipPos = GetPawnSkipPosition(player.Opponent());
 
         if (skipPos == null)
         {

@@ -1,4 +1,28 @@
 <Solution>
+  <Folder Name="/Network/">
+    <Project Path="Network/MIN.Chess.Client/MIN.Chess.Client.csproj" Id="a6d2d5c1-5877-407d-bef0-58656375ed48" />
+    <Project Path="Network/MIN.Chess.Messages.Contracts/MIN.Chess.Messages.Contracts.csproj" Id="fb79e17a-0755-4999-9a6e-4cc11c22344d" />
+    <Project Path="Network/MIN.Chess.Messages/MIN.Chess.Messages.csproj" Id="bf4934b5-a601-40ff-89cf-8cf082c4ec32" />
+    <Project Path="Network/MIN.Chess.Server/MIN.Chess.Server.csproj" Id="844bdcbf-a3b3-4c44-b85d-19cf5d88ded3" />
+  </Folder>
+  <Folder Name="/Network/Ipc/" />
+  <Folder Name="/Network/Ipc/Messaging/">
+    <Project Path="Network/Ipc/Messaging/MIN.Ipc.Messages.Contracts/MIN.Ipc.Messages.Contracts.csproj" Id="cf4ca508-853b-464a-840e-0806f4ec312a" />
+    <Project Path="Network/Ipc/Messaging/MIN.Ipc.Messages/MIN.Ipc.Messages.csproj" Id="f4fa5614-2fcb-4dfa-b327-3139e010f918" />
+  </Folder>
+  <Folder Name="/Network/Ipc/Serialization/">
+    <Project Path="Network/Ipc/Serialization/MIN.Ipc.Serialization.Contracts/MIN.Ipc.Serialization.Contracts.csproj" Id="d5eab091-2cb8-4015-9f85-65f4bce847d6" />
+    <Project Path="Network/Ipc/Serialization/MIN.Ipc.Serialization.Json/MIN.Ipc.Serialization.Json.csproj" Id="9462f2cc-e9da-40c2-83d3-e49e429c1e7d" />
+  </Folder>
+  <Folder Name="/Network/Ipc/Services/">
+    <Project Path="Network/Ipc/Services/MIN.Ipc.Services.Contracts/MIN.Ipc.Services.Contracts.csproj" Id="a484396f-a6a7-45d6-8145-8ae62b7b5072" />
+    <Project Path="Network/Ipc/Services/MIN.Ipc.Services/MIN.Ipc.Services.csproj" Id="250ed43e-2830-441e-9336-ba43d7d41b72" />
+  </Folder>
+  <Folder Name="/Network/Ipc/Transport/">
+    <Project Path="Network/Ipc/Transport/MIN.Chess.Ipc.Transport.Contracts/MIN.Ipc.Transport.Contracts.csproj" Id="3f8cd6be-f74e-445f-bee8-4242b41b22d0" />
+    <Project Path="Network/Ipc/Transport/MIN.Ipc.Transport.NamedPipes/MIN.Ipc.Transport.NamedPipes.csproj" Id="de496239-1bef-427b-af64-143ab804c556" />
+    <Project Path="Network/Ipc/Transport/MIN.Ipc.Transport.Tcp/MIN.Ipc.Transport.Tcp.csproj" Id="6a1a3bb0-7c18-4ce3-bc7b-0686e3a36c7d" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path="Directory.Build.props" />

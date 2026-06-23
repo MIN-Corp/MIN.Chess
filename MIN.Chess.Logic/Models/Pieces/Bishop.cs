@@ -45,6 +45,11 @@ public class Bishop : Piece
     public override IEnumerable<Move> GetMoves(Position from, Board board)
         => MovePositionsInDirs(from, board, dirs).Select(to => new NormalMove(from, to));
 
+
+    /// <inheritdoc />
+    public override IEnumerable<Position> GetPremovePositions(Position from, Board board)
+        => PremovePositionsInDirs(from, board, dirs);
+
     /// <inheritdoc />
     public override bool CanCaptureOpponentKing(Position from, Board board)
     {

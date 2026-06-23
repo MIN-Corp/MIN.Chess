@@ -49,6 +49,10 @@ public class Knight : Piece
         => PotentionalToPositions(from).Where(to => Board.IsInside(to) && (board.IsEmpty(to) || board[to]?.Color != Color));
 
     /// <inheritdoc />
+    public override IEnumerable<Position> GetPremovePositions(Position from, Board board)
+        => PotentionalToPositions(from).Where(Board.IsInside);
+
+    /// <inheritdoc />
     public override IEnumerable<Move> GetMoves(Position from, Board board)
         => MovePositions(from, board).Select(to => new NormalMove(from, to));
 }

@@ -90,9 +90,13 @@ public class StateString
         {
             sb.Append('w');
         }
-        else
+        else if (player == Player.Black)
         {
             sb.Append('b');
+        }
+        else
+        {
+            sb.Append('n');
         }
     }
 
