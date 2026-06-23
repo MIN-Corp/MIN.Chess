@@ -1,6 +1,6 @@
 # MinChess
 
-![Logo](https://raw.githubusercontent.com/CasCadeVR/MIN.Chess/master/chesslogo.png)
+![Logo](https://raw.githubusercontent.com/MIN-Corp/MIN.Chess/master/chesslogo.png)
 
 > **Multiplayer chess with full rules implementation, timer, and spectator support**
 

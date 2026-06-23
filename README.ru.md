@@ -1,6 +1,6 @@
 # MinChess
 
-![Logo](https://raw.githubusercontent.com/CasCadeVR/MIN.Chess/master/chesslogo.png)
+![Logo](https://raw.githubusercontent.com/MIN-Corp/MIN.Chess/master/chesslogo.png)
 
 > **Многопользовательские шахматы с полной реализацией правил, таймером и поддержкой наблюдателей**
 
