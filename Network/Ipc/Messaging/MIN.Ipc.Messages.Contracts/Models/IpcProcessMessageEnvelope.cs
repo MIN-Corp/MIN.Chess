@@ -26,6 +26,11 @@ public class IpcProcessMessageEnvelope
     public SessionMessageRoute Route { get; init; }
 
     /// <summary>
+    /// Канал, по которому пойдёт сообщение
+    /// </summary>
+    public MessageChannel Channel { get; init; }
+
+    /// <summary>
     /// Содержимое сообщения
     /// </summary>
     public required byte[] Body { get; init; }

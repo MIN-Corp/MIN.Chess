@@ -52,8 +52,17 @@ public interface IClientProcessBridge
     /// <summary>
     /// Отправить сообщение по сети
     /// </summary>
+    /// <typeparam name="T">Какой тип сообщения</typeparam>
+    /// <param name="message">само сообщение</param>
+    /// <param name="msgType">тип сообщения</param>
+    /// <param name="route">По какому пути пойдёт сообщение (сразу всем или через сервер приложения)</param>
+    /// <param name="channel">По какому каналу пойдёт сообщение (Secure - tcp, Fast - udp)</param>
+    /// <param name="recipientId">Кто получатель (null - если broadcats)</param>
+    /// <param name="broadcastExcludeIds">Кого исключить из широковещательного сообщения</param>
+    /// <param name="cancellationToken">Токен отмены</param>
     Task SendMessage<T>(T message, string? msgType = null, SessionMessageRoute route = SessionMessageRoute.ViaServer,
-        Guid? RecipientId = null, IEnumerable<Guid>? BroadcastExcludeIds = null, CancellationToken cancellationToken = default)
+        MessageChannel channel = MessageChannel.Secure, Guid? recipientId = null,
+        IEnumerable<Guid>? broadcastExcludeIds = null, CancellationToken cancellationToken = default)
         where T : class, INetworkMessage;
 
     /// <summary>

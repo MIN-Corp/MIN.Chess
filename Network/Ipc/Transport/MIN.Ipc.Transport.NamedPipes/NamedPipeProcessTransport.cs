@@ -26,15 +26,10 @@ public sealed class NamedPipeProcessClientTransport : IProcessClientTransport
             throw new ArgumentException("Expected pipe transport");
         }
 
-        if (!OperatingSystem.IsWindows())
-        {
-            throw new InvalidOperationException("Windows only");
-        }
-
         pipe = new NamedPipeClientStream(".", info.Value, PipeDirection.InOut,
             PipeOptions.Asynchronous, TokenImpersonationLevel.Impersonation);
         await pipe.ConnectAsync(5000, cancellationToken);
-        pipe.ReadMode = PipeTransmissionMode.Message;
+        pipe.ReadMode = PipeTransmissionMode.Byte;
         _ = ReadLoopAsync(cts.Token);
     }
 
