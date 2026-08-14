@@ -52,7 +52,7 @@ internal class NetworkService
     /// <summary>
     /// Отправить запрос на первоначальное сообщение
     /// </summary>
-    public Task SendInitAsync() => bridge.SendMessage(new InitRequestMessage(), cancellationToken: cancellationToken);
+    public Task SendInitAsync() => SendMessage(new InitRequestMessage());
 
     /// <summary>
     /// Отправить запрос на ход
@@ -92,15 +92,18 @@ internal class NetworkService
     /// <summary>
     /// Отправить настройки
     /// </summary>
-    public Task SendGameSettingsAsync(int? timerMin, int bonusSec) => bridge.SendMessage(
-        new GameSettingsMessage { TimerInitialMinutes = timerMin, TimerBonusSeconds = bonusSec },
-        cancellationToken: cancellationToken);
+    public Task SendGameSettingsAsync(int? timerMin, int bonusSec) => SendMessage(
+        new GameSettingsMessage
+        {
+            TimerInitialMinutes = timerMin,
+            TimerBonusSeconds = bonusSec
+        });
 
     private async Task SendMessage(BaseNetworkMessage message)
     {
         try
         {
-            await bridge.SendMessage(message, cancellationToken: cancellationToken);
+            await bridge.SendMessage(message, route: message.Route, channel: message.Channel, cancellationToken: cancellationToken);
         }
         catch (Exception ex)
         {
