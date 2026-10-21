@@ -144,6 +144,41 @@ public partial class MainForm
                 CountPiecesCapturesForSelfAndOpponent();
                 moveCache.Clear();
                 TryProcessPremoves();
+
+                if (isDragging && draggedPiece != null && dragFromPos != null)
+                {
+                    var pieceAlive = gameState.Board[dragFromPos.Value] is { } held && held.Color == draggedPiece.Color;
+
+                    if (!pieceAlive)
+                    {
+                        ClearDrag();
+                        ClearSelection();
+                    }
+                    else if (gameState.CurrentPlayer != role)
+                    {
+                        RebuildDisplayBoard();
+                        foreach (var to in gameState.PremovePositionsForPiece(dragFromPos.Value, role, displayBoard))
+                        {
+                            moveCache[to] = null!;
+                        }
+                        displayBoard ??= gameState.Board.Copy();
+                        displayBoard[dragFromPos.Value.Row, dragFromPos.Value.Column] = null;
+                    }
+                    else
+                    {
+                        RebuildDisplayBoard();
+                        foreach (var m in gameState.LegalMovesForPiece(dragFromPos.Value, role))
+                        {
+                            moveCache[m.ToPos] = m;
+                        }
+                    }
+                }
+
+                if (!isDragging)
+                {
+                    RebuildDisplayBoard();
+                }
+
                 mainPanel.Invalidate();
                 break;
 
