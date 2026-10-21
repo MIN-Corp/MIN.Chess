@@ -34,7 +34,7 @@ public static class MoveParser
 
         if (piece?.Type == PieceType.King && Math.Abs(from.Column - to.Column) == 2)
         {
-            var type = to.Column > from.Column ? MoveType.CastleKS : MoveType.CastleQS;
+            var type = to.Column > from.Column ? MoveType.CastleKs : MoveType.CastleQs;
             return new Castle(type, from);
         }
 

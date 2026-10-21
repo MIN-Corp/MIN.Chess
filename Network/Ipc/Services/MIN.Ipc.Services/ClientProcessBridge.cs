@@ -23,7 +23,11 @@ public class ClientProcessBridge : IClientProcessBridge
 
     Task IClientProcessBridge.StartListeningAsync(CancellationToken cancellationToken)
     {
-        processTransport?.MessageReceived += OnTransportMessage;
+        if (processTransport != null)
+        {
+            processTransport.MessageReceived += OnTransportMessage;
+        }
+
         return Task.CompletedTask;
     }
 
@@ -39,7 +43,7 @@ public class ClientProcessBridge : IClientProcessBridge
     /// <inheritdoc />
     public event EventHandler? CloseRequested;
 
-    private async void OnTransportMessage(object? sender, ProcessClientTransportMessageEventArgs e)
+    private void OnTransportMessage(object? sender, ProcessClientTransportMessageEventArgs e)
     {
         var envelope = JsonSerializer.Deserialize<IpcMinMessageEnvelope>(e.Data);
 
@@ -78,7 +82,7 @@ public class ClientProcessBridge : IClientProcessBridge
                 NetworkMessageReceived?.Invoke(this, networkMessage);
                 break;
 
-            case CloseMessage closeMessage:
+            case CloseMessage _:
                 CloseRequested?.Invoke(this, EventArgs.Empty);
                 break;
 
@@ -106,8 +110,8 @@ public class ClientProcessBridge : IClientProcessBridge
         registry.RegisterAllFromAnchor<TAnchor>();
     }
 
-    /// <inheritdoc />
-    private async Task SendIpcMessage(IpcMessage message, SessionMessageRoute route, MessageChannel channel, Guid? RecipientId, IEnumerable<Guid>? BroadcastExcludeIds, CancellationToken cancellationToken)
+    private async Task SendIpcMessage(IpcMessage message, SessionMessageRoute route, MessageChannel channel,
+        Guid? recipientId, IEnumerable<Guid>? broadcastExcludeIds, CancellationToken cancellationToken)
     {
         if (processTransport == null)
         {
@@ -118,9 +122,9 @@ public class ClientProcessBridge : IClientProcessBridge
         var envelope = new IpcProcessMessageEnvelope()
         {
             Body = messageData,
-            RecipientId = RecipientId,
+            RecipientId = recipientId,
             Channel = channel,
-            BroadcastExcludeIds = BroadcastExcludeIds,
+            BroadcastExcludeIds = broadcastExcludeIds,
             Route = route,
         };
 
@@ -136,16 +140,20 @@ public class ClientProcessBridge : IClientProcessBridge
     }
 
     async Task IClientProcessBridge.SendMessage<T>(T message, string? msgType, SessionMessageRoute route, MessageChannel channel,
-        Guid? RecipientId, IEnumerable<Guid>? BroadcastExcludeIds, CancellationToken cancellationToken)
+        Guid? recipientId, IEnumerable<Guid>? broadcastExcludeIds, CancellationToken cancellationToken)
         where T : class
     {
         var data = registry.Serialize(msgType, message);
-        await SendIpcMessage(new InSessionMessage(data), route, channel, RecipientId, BroadcastExcludeIds, cancellationToken);
+        await SendIpcMessage(new InSessionMessage(data), route, channel, recipientId, broadcastExcludeIds, cancellationToken);
     }
 
     Task IClientProcessBridge.StopListeningAsync(CancellationToken cancellationToken)
     {
-        processTransport?.MessageReceived -= OnTransportMessage;
+        if (processTransport != null)
+        {
+            processTransport.MessageReceived -= OnTransportMessage;
+        }
+
         return Task.CompletedTask;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 using MIN.Ipc.Services.Contracts.Interfaces;
 
 namespace MIN.Ipc.Services;
@@ -36,17 +37,25 @@ public sealed class NetworkMessageSerializerRegistry
         }
     }
 
-    internal string Serialize<T>(string? typeTag, T message)
+    internal byte[] Serialize<T>(string? typeTag, T message)
     {
-        var type = message is INetworkMessage networkMessage
-            ? networkMessage.Type
-            : typeTag ?? string.Empty;
+        var type = message is INetworkMessage nm ? nm.Type : typeTag ?? string.Empty;
 
-        var json = JsonSerializer.Serialize(message, typeMap[type]);
-        return $$"""{"type":"{{type}}","data":{{json}}}""";
+        if (!typeMap.TryGetValue(type, out var messageType))
+        {
+            throw new KeyNotFoundException($"Unknown message type: {type}");
+        }
+
+        var envelope = new JsonObject
+        {
+            ["type"] = type,
+            ["data"] = JsonNode.Parse(JsonSerializer.Serialize(message, messageType)),
+        };
+
+        return JsonSerializer.SerializeToUtf8Bytes(envelope);
     }
 
-    internal object? Deserialize(string json)
+    internal object? Deserialize(byte[] json)
     {
         using var doc = JsonDocument.Parse(json);
         var tag = doc.RootElement.GetProperty("type").GetString()!;

@@ -13,12 +13,12 @@ public enum MoveType
     /// <summary>
     /// Рокировка в сторону короля
     /// </summary>
-    CastleKS,
+    CastleKs,
 
     /// <summary>
     /// Рокировка в сторону ферзя
     /// </summary>
-    CastleQS,
+    CastleQs,
 
     /// <summary>
     /// Движение пешки на две клетки

@@ -52,7 +52,7 @@ public class PawnPromotion : Move
 
         var promotionPiece = CreatePromotionPiece(piece!.Color);
         board[ToPos] = promotionPiece;
-        piece?.HasMoved = true;
+        piece.HasMoved = true;
 
         return true;
     }

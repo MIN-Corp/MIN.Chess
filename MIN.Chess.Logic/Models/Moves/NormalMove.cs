@@ -31,7 +31,10 @@ public class NormalMove : Move
         var capture = !board.IsEmpty(ToPos);
         board[ToPos] = piece;
         board[FromPos] = null!;
-        piece?.HasMoved = true;
+        if (piece != null)
+        {
+            piece.HasMoved = true;
+        }
 
         return capture || piece?.Type == PieceType.Pawn;
     }

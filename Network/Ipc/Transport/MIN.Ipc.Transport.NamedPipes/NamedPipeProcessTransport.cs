@@ -65,7 +65,6 @@ public sealed class NamedPipeProcessClientTransport : IProcessClientTransport
         catch (Exception ex)
         {
             Console.WriteLine($"ReadLoop error: {ex.Message}");
-            return;
         }
     }
 
@@ -87,7 +86,7 @@ public sealed class NamedPipeProcessClientTransport : IProcessClientTransport
     /// <inheritdoc />
     public async Task DisconnectAsync()
     {
-        cts.Cancel();
+        await cts.CancelAsync();
         cts.Dispose();
         pipe?.Dispose();
     }

@@ -10,16 +10,17 @@ static internal class Program
     /// The main entry point for the application.
     /// </summary>
     [STAThread]
-    private static async Task Main(string[] args)
+    private static Task Main(string[] args)
     {
         if (args.Length == 0)
         {
             Debug.WriteLine("Client requires MIN connection args");
-            return;
+            return Task.CompletedTask;
         }
 
         var appCts = new CancellationTokenSource();
         ApplicationConfiguration.Initialize();
         Application.Run(new MainForm(new ClientProcessBridge(), appCts, args[0]));
+        return Task.CompletedTask;
     }
 }

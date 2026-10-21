@@ -27,14 +27,14 @@ public class Castle : Move
         Type = type;
         FromPos = kingPos;
 
-        if (type == MoveType.CastleKS)
+        if (type == MoveType.CastleKs)
         {
             kingMoveDir = Direction.East;
             ToPos = new Position(kingPos.Row, 6);
             rookFromPos = new Position(kingPos.Row, 7);
             rookToPos = new Position(kingPos.Row, 5);
         }
-        else if (type == MoveType.CastleQS)
+        else if (type == MoveType.CastleQs)
         {
             kingMoveDir = Direction.West;
             ToPos = new Position(kingPos.Row, 2);

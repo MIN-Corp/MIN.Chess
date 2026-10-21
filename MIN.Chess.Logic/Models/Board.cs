@@ -154,8 +154,10 @@ public class Board
         var backRank = color == Player.White ? 7 : 0;
 
         var kingPos = new Position(backRank, 4);
-        var king = board[kingPos] as King;
-        king?.HasMoved = !canCastleK && !canCastleQ;
+        if (board[kingPos] is King king)
+        {
+            king.HasMoved = !canCastleK && !canCastleQ;
+        }
 
         var rookHPos = new Position(backRank, 7);
         if (board[rookHPos] is Rook rookH && !canCastleK)
@@ -216,7 +218,7 @@ public class Board
     /// Находиться ли данная позиция внутри доски
     /// </summary>
     public static bool IsInside(Position position)
-        => position.Row >= 0 && position.Column >= 0 && position.Row < 8 && position.Column < 8;
+        => position is { Row: >= 0 and < 8, Column: >= 0 and < 8 };
 
     /// <summary>
     /// Пуста ли клетка на этой позиции
@@ -227,7 +229,7 @@ public class Board
     /// <summary>
     /// Получить позиции, где находятся фигуры
     /// </summary>
-    public IEnumerable<Position> PiecePositions()
+    private IEnumerable<Position> PiecePositions()
     {
         for (var r = 0; r < 8; r++)
         {
@@ -279,7 +281,7 @@ public class Board
     /// <summary>
     /// Посчитать фигуры
     /// </summary>
-    public Counting CountPieces()
+    private Counting CountPieces()
     {
         var counting = new Counting();
         var piecePositions = PiecePositions();
@@ -348,7 +350,7 @@ public class Board
     /// <summary>
     /// Права короля на рокировку в сторону короля
     /// </summary>
-    public bool CastleRightKS(Player player)
+    public bool CastleRightKs(Player player)
         => player switch
         {
             Player.White => IsUnmobedKingAndRook(new Position(7, 4), new Position(7, 7)),
@@ -359,7 +361,7 @@ public class Board
     /// <summary>
     /// Права короля на рокировку в сторону ферзя
     /// </summary>
-    public bool CastleRightQS(Player player)
+    public bool CastleRightQs(Player player)
         => player switch
         {
             Player.White => IsUnmobedKingAndRook(new Position(7, 4), new Position(7, 0)),
@@ -406,8 +408,8 @@ public class Board
 
         var pawnPositions = player switch
         {
-            Player.White => new Position[] { skipPos.Value + Direction.SouthWest, skipPos.Value + Direction.SouthEast },
-            Player.Black => new Position[] { skipPos.Value + Direction.NorthWest, skipPos.Value + Direction.NorthEast },
+            Player.White => new [] { skipPos.Value + Direction.SouthWest, skipPos.Value + Direction.SouthEast },
+            Player.Black => new [] { skipPos.Value + Direction.NorthWest, skipPos.Value + Direction.NorthEast },
             _ => []
         };
 

@@ -48,7 +48,7 @@ public partial class OutputForm : Form, ILoggerProvider
         ShowInTaskbar = false;
         SetupTrayIcon();
 
-        gameServerService = new(this);
+        gameServerService = new GameServerService(this);
         gameServerService.CloseRequested += Close;
         await gameServerService.InitializeNetworking(connectionString);
     }
@@ -56,7 +56,11 @@ public partial class OutputForm : Form, ILoggerProvider
     private void OutputForm_FormClosing(object sender, FormClosingEventArgs e)
     {
         gameServerService.StopService();
-        trayIcon?.Visible = false;
+        if (trayIcon != null)
+        {
+            trayIcon.Visible = false;
+        }
+
         trayIcon?.Dispose();
     }
 }

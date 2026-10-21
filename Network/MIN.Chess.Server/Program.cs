@@ -8,15 +8,16 @@ static internal class Program
     /// The main entry point for the application.
     /// </summary>
     [STAThread]
-    static async Task Main(string[] args)
+    private static Task Main(string[] args)
     {
         if (args.Length == 0)
         {
             Console.WriteLine("Client requires MIN connection args");
-            return;
+            return Task.CompletedTask;
         }
 
         ApplicationConfiguration.Initialize();
         Application.Run(new OutputForm(args[0]));
+        return Task.CompletedTask;
     }
 }
