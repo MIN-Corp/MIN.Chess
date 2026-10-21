@@ -311,6 +311,11 @@ public partial class MainForm
 
     private void HandlePremove(Position pos, MouseEventArgs e)
     {
+        if (gameState == null)
+        {
+            return;
+        }
+
         displayBoard ??= gameState.Board.Copy();
         var premovePiece = displayBoard[pos.Row, pos.Column];
         var isNotAllowedToMove = premovePiece == null || (premovePiece != null && premovePiece.Color != role);
@@ -378,7 +383,12 @@ public partial class MainForm
                 {
                     displayBoard = null;
                 }
-                displayBoard?[dragFromPos!.Value.Row, dragFromPos!.Value.Column] = draggedPiece;
+
+                if (displayBoard != null)
+                {
+                    displayBoard[dragFromPos!.Value.Row, dragFromPos!.Value.Column] = draggedPiece;
+                }
+
                 ClearDrag();
                 mainPanel.Invalidate();
                 return;
@@ -390,7 +400,10 @@ public partial class MainForm
 
             if (moveCache.ContainsKey(dropPos.Value))
             {
-                displayBoard?[dropPos.Value.Row, dropPos.Value.Column] = draggedPiece;
+                if (displayBoard != null)
+                {
+                    displayBoard[dropPos.Value.Row, dropPos.Value.Column] = draggedPiece;
+                }
 
                 if (piece?.Type == PieceType.Pawn && IsPromotionRank(to, piece.Color))
                 {
@@ -404,7 +417,10 @@ public partial class MainForm
             }
             else
             {
-                displayBoard?[dragFromPos!.Value.Row, dragFromPos!.Value.Column] = draggedPiece;
+                if (displayBoard != null)
+                {
+                    displayBoard[dragFromPos!.Value.Row, dragFromPos!.Value.Column] = draggedPiece;
+                }
             }
 
             ClearSelection();
@@ -448,6 +464,11 @@ public partial class MainForm
 
     private void HandleClick(MouseEventArgs e)
     {
+        if (gameState == null)
+        {
+            return;
+        }
+
         var clickPos = GetPositionFromPoint(e.Location);
         if (clickPos == null)
         {
@@ -520,8 +541,8 @@ public partial class MainForm
         => color == Player.White ? to.Row == 0 : to.Row == 7;
 
     private bool TryingToPremove()
-        => role!.Value != gameState.CurrentPlayer
-        && role!.Value != Player.None && gameState.CurrentPlayer != Player.None;
+        => role!.Value != gameState?.CurrentPlayer
+        && role!.Value != Player.None && gameState?.CurrentPlayer != Player.None;
 
     private void ShowPromotionDialogAndQueue(Position from, Position to, Player color)
     {
@@ -537,6 +558,11 @@ public partial class MainForm
 
     private void OnFromPositionSelected(Position position)
     {
+        if (gameState == null)
+        {
+            return;
+        }
+
         var moves = gameState.LegalMovesForPiece(position, role);
         if (!moves.Any())
         {

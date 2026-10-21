@@ -131,12 +131,12 @@ public class King : Piece
 
         if (CanCastleKingSide(from, board))
         {
-            yield return new Castle(MoveType.CastleKS, from);
+            yield return new Castle(MoveType.CastleKs, from);
         }
 
         if (CanCastleQueenSide(from, board))
         {
-            yield return new Castle(MoveType.CastleQS, from);
+            yield return new Castle(MoveType.CastleQs, from);
         }
     }
 

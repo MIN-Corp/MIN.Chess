@@ -66,7 +66,6 @@ public class TcpProcessClientTransport : IProcessClientTransport
         catch (Exception ex)
         {
             Console.WriteLine($"ReadLoop error: {ex.Message}");
-            return;
         }
     }
 
@@ -88,7 +87,7 @@ public class TcpProcessClientTransport : IProcessClientTransport
     /// <inheritdoc />
     public async Task DisconnectAsync()
     {
-        cts.Cancel();
+        await cts.CancelAsync();
         cts.Dispose();
         client?.Dispose();
         stream?.Dispose();

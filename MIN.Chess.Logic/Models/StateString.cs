@@ -102,30 +102,30 @@ public class StateString
 
     private void AddCastlingRights(Board board)
     {
-        var castleWKS = board.CastleRightKS(Player.White);
-        var castleWQS = board.CastleRightQS(Player.White);
-        var castleBKS = board.CastleRightKS(Player.Black);
-        var castleBQS = board.CastleRightQS(Player.Black);
+        var castleWks = board.CastleRightKs(Player.White);
+        var castleWqs = board.CastleRightQs(Player.White);
+        var castleBks = board.CastleRightKs(Player.Black);
+        var castleBqs = board.CastleRightQs(Player.Black);
 
-        if (!(castleWKS || castleWQS || castleBKS || castleBQS))
+        if (!(castleWks || castleWqs || castleBks || castleBqs))
         {
             sb.Append('-');
             return;
         }
 
-        if (castleWKS)
+        if (castleWks)
         {
             sb.Append('K');
         }
-        if (castleWQS)
+        if (castleWqs)
         {
             sb.Append('Q');
         }
-        if (castleBKS)
+        if (castleBks)
         {
             sb.Append('k');
         }
-        if (castleBQS)
+        if (castleBqs)
         {
             sb.Append('q');
         }

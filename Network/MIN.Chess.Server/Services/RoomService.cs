@@ -33,20 +33,14 @@ internal class RoomService
             yield return id;
         }
 
-        foreach (var p in players.Values)
+        foreach (var p in players.Values.OfType<Participant>().Where(p => !loadedParticipants.Contains(p.Id)))
         {
-            if (p != null && !loadedParticipants.Contains(p.Id))
-            {
-                yield return p.Id;
-            }
+            yield return p.Id;
         }
 
-        foreach (var id in spectators.Keys)
+        foreach (var id in spectators.Keys.Where(id => !loadedParticipants.Contains(id)))
         {
-            if (!loadedParticipants.Contains(id))
-            {
-                yield return id;
-            }
+            yield return id;
         }
 
         if (excludeId.HasValue)
@@ -126,7 +120,7 @@ internal class RoomService
     /// <summary>
     /// Обработать инициализацию игрока
     /// </summary>
-    public async Task HandleInit(InitRequestMessage message)
+    public Task HandleInit(InitRequestMessage message)
     {
         logger.Log("InitRequestMessage received");
 
@@ -145,10 +139,11 @@ internal class RoomService
         if (sender != null)
         {
             OnInitRequestReceived?.Invoke(sender);
-            return;
+            return Task.CompletedTask;
         }
 
         pendingInits[senderId] = message;
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -216,15 +211,16 @@ internal class RoomService
     /// <summary>
     /// Обработать загрузку игрока
     /// </summary>
-    public async Task HandlePlayerLoaded(string senderId)
+    public Task HandlePlayerLoaded(string senderId)
     {
         var id = Guid.Parse(senderId);
         if (!loadedParticipants.Add(id))
         {
-            return;
+            return Task.CompletedTask;
         }
 
         logger.Log($"Participant {id} loaded");
+        return Task.CompletedTask;
     }
 
     /// <summary>

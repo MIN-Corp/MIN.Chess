@@ -40,43 +40,45 @@ internal class GameService
         this.roomService = roomService;
         this.timerService = timerService;
 
-        timerService.OnSettingsChanged += async () => await SendStateUpdate();
-        timerService.OnTimeOut += async (player) =>
+        timerService.OnSettingsChanged += async void () => await SendStateUpdate();
+        timerService.OnTimeOut += async void (player) =>
         {
             var result = new Result(player.Opponent(), EndReason.Timeout);
             GameState.Result = result;
             await SendGameResult(result);
         };
 
-        roomService.OnInitRequestReceived += async (sender) => await SendInitResponse(sender);
-        roomService.OnPlayerJoined += async (role) =>
+        roomService.OnInitRequestReceived += async void (sender) => await SendInitResponse(sender);
+        roomService.OnPlayerJoined += async void (role) =>
         {
             if (role != Player.None)
             {
                 await ManangeStartGameStateOutOfPlayerPresence();
             }
         };
-        roomService.OnPlayerLeft += async (player) =>
+        roomService.OnPlayerLeft += (player) =>
         {
-            if (player != Player.None)
+            if (player == Player.None)
             {
-                Restart();
-                GameState.CurrentPlayer = Player.None;
+                return;
             }
+
+            Restart();
+            GameState.CurrentPlayer = Player.None;
         };
 
-        voteService.OnRestart += async () =>
+        voteService.OnRestart += async void () =>
         {
             Restart();
             await ManangeStartGameStateOutOfPlayerPresence();
         };
-        voteService.OnResign += async (winner) =>
+        voteService.OnResign += async void (winner) =>
         {
             var result = new Result(winner, EndReason.Resign);
             GameState.Result = result;
             await SendGameResult(result);
         };
-        voteService.OnDraw += async () =>
+        voteService.OnDraw += async void () =>
         {
             var result = Result.Draw(EndReason.Draw);
             GameState.Result = result;

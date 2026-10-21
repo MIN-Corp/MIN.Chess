@@ -13,7 +13,7 @@ namespace MIN.Chess.Client.Forms;
 public partial class MainForm
 {
     private Dictionary<Player, Participant?> players = [];
-    private GameState gameState = null!;
+    private GameState? gameState;
     private Player? role;
     private Participant? participant;
 
@@ -143,7 +143,42 @@ public partial class MainForm
                 SyncTimerValues(moveUpdateMessage.WhiteMs, moveUpdateMessage.BlackMs, gameState.CurrentPlayer);
                 CountPiecesCapturesForSelfAndOpponent();
                 moveCache.Clear();
-                await TryProcessPremoves();
+                TryProcessPremoves();
+
+                if (isDragging && draggedPiece != null && dragFromPos != null)
+                {
+                    var pieceAlive = gameState.Board[dragFromPos.Value] is { } held && held.Color == draggedPiece.Color;
+
+                    if (!pieceAlive)
+                    {
+                        ClearDrag();
+                        ClearSelection();
+                    }
+                    else if (gameState.CurrentPlayer != role)
+                    {
+                        RebuildDisplayBoard();
+                        foreach (var to in gameState.PremovePositionsForPiece(dragFromPos.Value, role, displayBoard))
+                        {
+                            moveCache[to] = null!;
+                        }
+                        displayBoard ??= gameState.Board.Copy();
+                        displayBoard[dragFromPos.Value.Row, dragFromPos.Value.Column] = null;
+                    }
+                    else
+                    {
+                        RebuildDisplayBoard();
+                        foreach (var m in gameState.LegalMovesForPiece(dragFromPos.Value, role))
+                        {
+                            moveCache[m.ToPos] = m;
+                        }
+                    }
+                }
+
+                if (!isDragging)
+                {
+                    RebuildDisplayBoard();
+                }
+
                 mainPanel.Invalidate();
                 break;
 
@@ -285,9 +320,14 @@ public partial class MainForm
         promotionMenu.ShowDialog();
     }
 
-    private async Task TryProcessPremoves()
+    private void TryProcessPremoves()
     {
-        if (premoves.Count == 0 || gameState.CurrentPlayer != role)
+        if (gameState == null)
+        {
+            return;
+        }
+
+        if (premoves.Count == 0 || gameState?.CurrentPlayer != role)
         {
             return;
         }
@@ -295,7 +335,7 @@ public partial class MainForm
         var (from, to, promoPiece) = premoves[0];
         premoves.RemoveAt(0);
 
-        var moves = gameState.LegalMovesForPiece(from, role);
+        var moves = gameState!.LegalMovesForPiece(from, role);
         var match = moves.FirstOrDefault(m => m.ToPos.Row == to.Row && m.ToPos.Column == to.Column);
 
         if (match != null)
