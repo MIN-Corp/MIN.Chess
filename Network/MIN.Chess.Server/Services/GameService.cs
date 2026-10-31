@@ -53,7 +53,7 @@ internal class GameService
         {
             if (role != Player.None)
             {
-                await ManangeStartGameStateOutOfPlayerPresence();
+                await ManageStartGameStateOutOfPlayerPresence();
             }
         };
         roomService.OnPlayerLeft += (player) =>
@@ -70,7 +70,7 @@ internal class GameService
         voteService.OnRestart += async void () =>
         {
             Restart();
-            await ManangeStartGameStateOutOfPlayerPresence();
+            await ManageStartGameStateOutOfPlayerPresence();
         };
         voteService.OnResign += async void (winner) =>
         {
@@ -92,7 +92,7 @@ internal class GameService
     public async Task HandleStateUpdate(INetworkMessage message)
     {
         logger.Log("StateUpdateRequestMessage received");
-        logger.Log($"sending gamestate {GameState.ToString()}");
+        logger.Log($"sending game state {GameState}");
         await SendStateUpdate(Guid.Parse(message.SenderId));
     }
 
@@ -186,7 +186,7 @@ internal class GameService
         timerService.StopTimer();
     }
 
-    private async Task ManangeStartGameStateOutOfPlayerPresence()
+    private async Task ManageStartGameStateOutOfPlayerPresence()
     {
         if (roomService.IsBothPlayersJoined())
         {
@@ -214,7 +214,7 @@ internal class GameService
     }
 
     /// <summary>
-    /// Отправить информацию об игре и учатснике
+    /// Отправить информацию об игре и участнике
     /// </summary>
     public async Task SendInitResponse(Participant participant)
     {
@@ -240,7 +240,7 @@ internal class GameService
     /// <summary>
     /// Отправить обновление состояния всем участникам
     /// </summary>
-    public async Task SendStateUpdate(Guid? recepientId = null)
+    public async Task SendStateUpdate(Guid? recipientId = null)
     {
         var (whiteMs, blackMs) = timerService.GetCurrentRemainingMs();
         logger.Log($"Sending state update: whiteMs={whiteMs}ms, blackMs={blackMs}ms");
@@ -255,9 +255,9 @@ internal class GameService
             TimerBonusSeconds = timerService.TimerBonusMs / 1000
         };
 
-        if (recepientId != null)
+        if (recipientId != null)
         {
-            await messageService.SendToAsync(stateUpdate, recepientId.Value);
+            await messageService.SendToAsync(stateUpdate, recipientId.Value);
             return;
         }
 

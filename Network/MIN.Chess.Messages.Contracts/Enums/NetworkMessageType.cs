@@ -94,4 +94,9 @@ public enum NetworkMessageType : byte
     /// Игрок прогрузился, готов принимать данные с сервера
     /// </summary>
     PlayerLoaded = 17,
+
+    /// <summary>
+    /// Игрок хочет сыграть с ИИ
+    /// </summary>
+    AgentChoose = 18,
 }

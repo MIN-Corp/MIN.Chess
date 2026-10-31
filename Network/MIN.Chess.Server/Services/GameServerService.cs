@@ -122,6 +122,10 @@ internal class GameServerService
                 await roomService.HandlePlayerLoaded(message.SenderId);
                 break;
 
+            case AgentChooseMessage agentChooseMessage:
+                await roomService.HandleAgentChoose(message.SenderId, agentChooseMessage.AgentType);
+                break;
+
             case GameSettingsMessage gameSettingsMessage:
                 await timerService.HandleGameSettings(gameSettingsMessage);
                 break;

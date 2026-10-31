@@ -1,4 +1,7 @@
-﻿using MIN.Chess.Logic.Enums;
+﻿using MIN.Chess.Agents.Contracts;
+using MIN.Chess.Agents.Enums;
+using MIN.Chess.Agents.Services;
+using MIN.Chess.Logic.Enums;
 using MIN.Chess.Messages.Messages;
 using MIN.Chess.Server.Helpers;
 using MIN.Ipc.Services.Contracts.Interfaces;
@@ -13,6 +16,7 @@ internal class RoomService
 {
     private readonly MessageService messageService;
     private readonly ILoggerProvider logger;
+    private readonly IChessAgentFactory agentFactory = new ChessAgentFactory();
 
     private readonly static Dictionary<Guid, Participant> spectators = [];
     private readonly static HashSet<Guid> loadedParticipants = [];
@@ -224,6 +228,22 @@ internal class RoomService
     }
 
     /// <summary>
+    /// Обработать загрузку игрока
+    /// </summary>
+    public async Task HandleAgentChoose(string senderIdString, AgentType agentType)
+    {
+        var senderId = Guid.Parse(senderIdString);
+
+        if (IsBothPlayersJoined())
+        {
+            await messageService.SendErrorAsync(senderId, "С тобой уже играет другой игрок");
+            return;
+        }
+
+        var agent = agentFactory.GetAgent(agentType);
+    }
+
+    /// <summary>
     /// Обработать присоединения участника
     /// </summary>
     public async Task HandleParticipantJoining(Participant participant)
@@ -289,10 +309,8 @@ internal class RoomService
     {
         loadedParticipants.Remove(participantId);
 
-        if (spectators.ContainsKey(participantId))
+        if (spectators.Remove(participantId))
         {
-            spectators.Remove(participantId);
-
             OnPlayerLeft?.Invoke(Player.None);
 
             await messageService.BroadcastExcludingAsync(new PlayerDisconnectedMessage()

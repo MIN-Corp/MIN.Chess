@@ -1,3 +1,4 @@
+using MIN.Chess.Client.Forms.HelperForms;
 using MIN.Chess.Client.Services;
 using MIN.Ipc.Services.Contracts.Interfaces;
 
