@@ -9,10 +9,11 @@ namespace MIN.Chess.Logic.Models;
 /// </summary>
 public class GameState
 {
-    private readonly Dictionary<string, int> stateHistory = [];
+    private IEnumerable<Move>? cachedLegalMoves;
+    private Dictionary<string, int> stateHistory = [];
     private int noCapturesOrPawnMoves;
     private string stateString;
-    private IEnumerable<Move>? cachedLegalMoves;
+    private List<Move> moveHistory = [];
 
     /// <summary>
     /// Доска с фигурами
@@ -32,12 +33,18 @@ public class GameState
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="GameState"/>
     /// </summary>
-    public GameState(Board board, Player currentPlayer)
+    public GameState(Board board, Player currentPlayer, bool asCopy = false)
     {
         Board = board;
         CurrentPlayer = currentPlayer;
 
         stateString = new StateString(CurrentPlayer, Board).ToString();
+
+        if (asCopy)
+        {
+            return;
+        }
+
         stateHistory[stateString] = 1;
     }
 
@@ -51,12 +58,7 @@ public class GameState
     /// </summary>
     public IEnumerable<Move> LegalMovesForPiece(Position position, Player? role = null)
     {
-        if (Board.IsEmpty(position) || Board[position]?.Color != CurrentPlayer)
-        {
-            return [];
-        }
-
-        if (role != null && (role != CurrentPlayer || role == Player.None))
+        if (Board.IsEmpty(position) || Board[position]?.Color != CurrentPlayer || role != null && (role != CurrentPlayer || role == Player.None))
         {
             return [];
         }
@@ -80,7 +82,7 @@ public class GameState
 
         var piece = board[position];
 
-        if ((role != null && role == Player.None) || piece?.Color != role)
+        if (role == Player.None || piece?.Color != role)
         {
             return [];
         }
@@ -94,6 +96,8 @@ public class GameState
     /// </summary>
     public void MakeMove(Move move)
     {
+        moveHistory.Add(move);
+
         Board.SetPawnSkipPosition(CurrentPlayer, null);
         var captureOrPawn = move.Execute(Board);
 
@@ -111,6 +115,12 @@ public class GameState
         UpdateStateString();
         cachedLegalMoves = GenerateAllLegalMoves(CurrentPlayer);
     }
+
+    /// <summary>
+    /// Получить последний сыгранный ход
+    /// </summary>
+    public Move? GetLastMove()
+        => moveHistory.LastOrDefault();
 
     private IEnumerable<Move> GenerateAllLegalMoves(Player player)
     {
@@ -145,7 +155,7 @@ public class GameState
     /// <summary>
     /// Сработало ли правило пятидесяти ходов
     /// </summary>
-    public bool FiftyMoveRule() => (noCapturesOrPawnMoves / 2) == 50;
+    private bool FiftyMoveRule() => (noCapturesOrPawnMoves / 2) == 50;
 
     /// <summary>
     /// Проверить на окончание игры
@@ -154,14 +164,9 @@ public class GameState
     {
         if (!cachedLegalMoves?.Any() == true)
         {
-            if (Board.IsInCheck(CurrentPlayer))
-            {
-                Result = Models.Result.Win(CurrentPlayer.Opponent());
-            }
-            else
-            {
-                Result = Models.Result.Draw(EndReason.StaleMate);
-            }
+            Result = Board.IsInCheck(CurrentPlayer)
+                ? Models.Result.Win(CurrentPlayer.Opponent())
+                : Models.Result.Draw(EndReason.StaleMate);
         }
         else if (Board.InsufficientMaterial())
         {
@@ -176,6 +181,48 @@ public class GameState
             Result = Models.Result.Draw(EndReason.ThreefoldRepetition);
         }
     }
+
+    /// <summary>
+    /// Оценить состояние, выигрывает ли тот, кого сейчас текущий ход
+    /// </summary>
+    public float GetAdvantageScore()
+    {
+        CheckForGameOver();
+
+        if (Result.HasValue && Result.Value.Winner == CurrentPlayer)
+        {
+            return float.MaxValue;
+        }
+
+        if (Result.HasValue && Result.Value.Winner != CurrentPlayer)
+        {
+            return float.MinValue;
+        }
+
+        if (Result.HasValue)
+        {
+            return 0.0f;
+        }
+
+        return GetOverallPieceScoreFor(CurrentPlayer) / GetOverallPieceScoreFor(CurrentPlayer.Opponent());
+    }
+
+    /// <summary>
+    /// Копия состояния игры
+    /// </summary>
+    public GameState Copy()
+        => new(Board.Copy(), CurrentPlayer)
+        {
+            moveHistory = moveHistory,
+            stateString = stateString,
+            stateHistory = stateHistory,
+            noCapturesOrPawnMoves = noCapturesOrPawnMoves,
+            Result = Result
+        };
+
+    private float GetOverallPieceScoreFor(Player player)
+        => Enum.GetValues(typeof(PieceType)).Cast<PieceType>()
+            .Sum(type => Board.CountOf(player, type) * type.GetScore());
 
     private void UpdateStateString()
     {

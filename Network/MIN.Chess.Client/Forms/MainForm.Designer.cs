@@ -88,9 +88,9 @@ namespace MIN.Chess.Client.Forms
             panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)bonusTrackBar).BeginInit();
             SuspendLayout();
-            //
+            // 
             // tableLayoutPanel
-            //
+            // 
             tableLayoutPanel.ColumnCount = 3;
             tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 180F));
             tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
@@ -117,9 +117,9 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 48F));
             tableLayoutPanel.Size = new System.Drawing.Size(984, 579);
             tableLayoutPanel.TabIndex = 0;
-            //
+            // 
             // settingsTitle
-            //
+            // 
             settingsTitle.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             settingsTitle.AutoSize = true;
             settingsTitle.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
@@ -129,9 +129,9 @@ namespace MIN.Chess.Client.Forms
             settingsTitle.Size = new System.Drawing.Size(139, 21);
             settingsTitle.TabIndex = 10;
             settingsTitle.Text = "Настройки игры";
-            //
+            // 
             // mainPanel
-            //
+            // 
             mainPanel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             mainPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             mainPanel.Location = new System.Drawing.Point(180, 0);
@@ -140,9 +140,9 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanel.SetRowSpan(mainPanel, 5);
             mainPanel.Size = new System.Drawing.Size(624, 579);
             mainPanel.TabIndex = 0;
-            //
+            // 
             // tableLayoutPanelSpectating
-            //
+            // 
             tableLayoutPanelSpectating.ColumnCount = 2;
             tableLayoutPanelSpectating.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 32F));
             tableLayoutPanelSpectating.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
@@ -155,9 +155,9 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanelSpectating.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             tableLayoutPanelSpectating.Size = new System.Drawing.Size(174, 42);
             tableLayoutPanelSpectating.TabIndex = 5;
-            //
+            // 
             // spectatorsCounter
-            //
+            // 
             spectatorsCounter.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold);
             spectatorsCounter.ForeColor = System.Drawing.Color.White;
             spectatorsCounter.Location = new System.Drawing.Point(3, 0);
@@ -166,9 +166,9 @@ namespace MIN.Chess.Client.Forms
             spectatorsCounter.TabIndex = 4;
             spectatorsCounter.Text = "0";
             spectatorsCounter.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            //
+            // 
             // spectatorLogo
-            //
+            // 
             spectatorLogo.BackgroundImage = global::MIN.Chess.Client.Properties.Resources.eye;
             spectatorLogo.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             spectatorLogo.Dock = System.Windows.Forms.DockStyle.Left;
@@ -177,9 +177,9 @@ namespace MIN.Chess.Client.Forms
             spectatorLogo.Size = new System.Drawing.Size(36, 36);
             spectatorLogo.TabIndex = 5;
             spectatorLogo.TabStop = false;
-            //
+            // 
             // tableLayoutPanelButtons
-            //
+            // 
             tableLayoutPanelButtons.ColumnCount = 4;
             tableLayoutPanelButtons.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 42F));
             tableLayoutPanelButtons.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 42F));
@@ -195,9 +195,9 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanelButtons.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             tableLayoutPanelButtons.Size = new System.Drawing.Size(174, 42);
             tableLayoutPanelButtons.TabIndex = 6;
-            //
+            // 
             // updateStateButton
-            //
+            // 
             updateStateButton.BackgroundImage = global::MIN.Chess.Client.Properties.Resources.download;
             updateStateButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             updateStateButton.ForeColor = System.Drawing.Color.Black;
@@ -207,9 +207,9 @@ namespace MIN.Chess.Client.Forms
             updateStateButton.TabIndex = 12;
             updateStateButton.UseVisualStyleBackColor = true;
             updateStateButton.Click += updateStateButton_Click;
-            //
+            // 
             // drawButton
-            //
+            // 
             drawButton.BackgroundImage = global::MIN.Chess.Client.Properties.Resources.draw;
             drawButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             drawButton.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -220,9 +220,9 @@ namespace MIN.Chess.Client.Forms
             drawButton.TabIndex = 11;
             drawButton.UseVisualStyleBackColor = true;
             drawButton.Click += drawButton_Click;
-            //
+            // 
             // pauseButton
-            //
+            // 
             pauseButton.BackgroundImage = global::MIN.Chess.Client.Properties.Resources.pause;
             pauseButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             pauseButton.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -233,9 +233,9 @@ namespace MIN.Chess.Client.Forms
             pauseButton.TabIndex = 10;
             pauseButton.UseVisualStyleBackColor = true;
             pauseButton.Click += pauseButton_Click;
-            //
+            // 
             // resignButton
-            //
+            // 
             resignButton.BackgroundImage = global::MIN.Chess.Client.Properties.Resources.resign;
             resignButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             resignButton.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -246,9 +246,9 @@ namespace MIN.Chess.Client.Forms
             resignButton.TabIndex = 9;
             resignButton.UseVisualStyleBackColor = true;
             resignButton.Click += resignButton_Click;
-            //
+            // 
             // tableLayoutPanelOpponent
-            //
+            // 
             tableLayoutPanelOpponent.ColumnCount = 1;
             tableLayoutPanelOpponent.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             tableLayoutPanelOpponent.Controls.Add(opponentNameWithTimer, 0, 0);
@@ -260,9 +260,9 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanelOpponent.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             tableLayoutPanelOpponent.Size = new System.Drawing.Size(174, 42);
             tableLayoutPanelOpponent.TabIndex = 7;
-            //
+            // 
             // opponentNameWithTimer
-            //
+            // 
             opponentNameWithTimer.Controls.Add(opponentTimerLabel);
             opponentNameWithTimer.Controls.Add(opponentName);
             opponentNameWithTimer.Location = new System.Drawing.Point(0, 0);
@@ -270,9 +270,9 @@ namespace MIN.Chess.Client.Forms
             opponentNameWithTimer.Name = "opponentNameWithTimer";
             opponentNameWithTimer.Size = new System.Drawing.Size(174, 20);
             opponentNameWithTimer.TabIndex = 15;
-            //
+            // 
             // opponentTimerLabel
-            //
+            // 
             opponentTimerLabel.AutoSize = true;
             opponentTimerLabel.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             opponentTimerLabel.ForeColor = System.Drawing.Color.White;
@@ -281,9 +281,9 @@ namespace MIN.Chess.Client.Forms
             opponentTimerLabel.Size = new System.Drawing.Size(38, 21);
             opponentTimerLabel.TabIndex = 3;
             opponentTimerLabel.Text = "--:--";
-            //
+            // 
             // opponentName
-            //
+            // 
             opponentName.AutoSize = true;
             opponentName.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             opponentName.ForeColor = System.Drawing.Color.White;
@@ -292,9 +292,9 @@ namespace MIN.Chess.Client.Forms
             opponentName.Size = new System.Drawing.Size(104, 21);
             opponentName.TabIndex = 2;
             opponentName.Text = "Загрузка . . .";
-            //
+            // 
             // opponentCapturesPanel
-            //
+            // 
             opponentCapturesPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             opponentCapturesPanel.Location = new System.Drawing.Point(0, 20);
             opponentCapturesPanel.Margin = new System.Windows.Forms.Padding(0);
@@ -302,9 +302,9 @@ namespace MIN.Chess.Client.Forms
             opponentCapturesPanel.Size = new System.Drawing.Size(174, 22);
             opponentCapturesPanel.TabIndex = 16;
             opponentCapturesPanel.Paint += PanelCaptures_Paint;
-            //
+            // 
             // tableLayoutPanelSelf
-            //
+            // 
             tableLayoutPanelSelf.ColumnCount = 1;
             tableLayoutPanelSelf.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             tableLayoutPanelSelf.Controls.Add(selfNameAndTimer, 0, 0);
@@ -316,9 +316,9 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanelSelf.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             tableLayoutPanelSelf.Size = new System.Drawing.Size(174, 42);
             tableLayoutPanelSelf.TabIndex = 8;
-            //
+            // 
             // selfNameAndTimer
-            //
+            // 
             selfNameAndTimer.Controls.Add(selfTimerLabel);
             selfNameAndTimer.Controls.Add(selfRoleName);
             selfNameAndTimer.Location = new System.Drawing.Point(0, 0);
@@ -326,9 +326,9 @@ namespace MIN.Chess.Client.Forms
             selfNameAndTimer.Name = "selfNameAndTimer";
             selfNameAndTimer.Size = new System.Drawing.Size(174, 20);
             selfNameAndTimer.TabIndex = 16;
-            //
+            // 
             // selfTimerLabel
-            //
+            // 
             selfTimerLabel.AutoSize = true;
             selfTimerLabel.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             selfTimerLabel.ForeColor = System.Drawing.Color.White;
@@ -337,9 +337,9 @@ namespace MIN.Chess.Client.Forms
             selfTimerLabel.Size = new System.Drawing.Size(38, 21);
             selfTimerLabel.TabIndex = 3;
             selfTimerLabel.Text = "--:--";
-            //
+            // 
             // selfRoleName
-            //
+            // 
             selfRoleName.AutoSize = true;
             selfRoleName.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             selfRoleName.ForeColor = System.Drawing.Color.White;
@@ -348,9 +348,9 @@ namespace MIN.Chess.Client.Forms
             selfRoleName.Size = new System.Drawing.Size(104, 21);
             selfRoleName.TabIndex = 1;
             selfRoleName.Text = "Загрузка . . .";
-            //
+            // 
             // selfCapturesPanel
-            //
+            // 
             selfCapturesPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             selfCapturesPanel.Location = new System.Drawing.Point(0, 20);
             selfCapturesPanel.Margin = new System.Windows.Forms.Padding(0);
@@ -358,9 +358,9 @@ namespace MIN.Chess.Client.Forms
             selfCapturesPanel.Size = new System.Drawing.Size(174, 22);
             selfCapturesPanel.TabIndex = 17;
             selfCapturesPanel.Paint += PanelCaptures_Paint;
-            //
+            // 
             // changeRoleButton
-            //
+            // 
             changeRoleButton.BackColor = System.Drawing.Color.FromArgb(((int)((byte)248)), ((int)((byte)249)), ((int)((byte)255)));
             changeRoleButton.Dock = System.Windows.Forms.DockStyle.Fill;
             changeRoleButton.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)((byte)167)), ((int)((byte)157)), ((int)((byte)255)));
@@ -376,9 +376,9 @@ namespace MIN.Chess.Client.Forms
             changeRoleButton.UseVisualStyleBackColor = false;
             changeRoleButton.Visible = false;
             changeRoleButton.Click += changeRoleButton_Click;
-            //
+            // 
             // flowLayoutPanelVotes
-            //
+            // 
             flowLayoutPanelVotes.Controls.Add(restartQuote);
             flowLayoutPanelVotes.Controls.Add(drawQuote);
             flowLayoutPanelVotes.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -388,9 +388,9 @@ namespace MIN.Chess.Client.Forms
             flowLayoutPanelVotes.Name = "flowLayoutPanelVotes";
             flowLayoutPanelVotes.Size = new System.Drawing.Size(180, 48);
             flowLayoutPanelVotes.TabIndex = 12;
-            //
+            // 
             // restartQuote
-            //
+            // 
             restartQuote.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             restartQuote.AutoSize = true;
             restartQuote.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
@@ -403,9 +403,9 @@ namespace MIN.Chess.Client.Forms
             restartQuote.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             restartQuote.Visible = false;
             restartQuote.Click += restartQuote_Click;
-            //
+            // 
             // drawQuote
-            //
+            // 
             drawQuote.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             drawQuote.AutoSize = true;
             drawQuote.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
@@ -417,9 +417,9 @@ namespace MIN.Chess.Client.Forms
             drawQuote.Text = "Ничья? (1/2)";
             drawQuote.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             drawQuote.Visible = false;
-            //
+            // 
             // flowLayoutPanelSettings
-            //
+            // 
             flowLayoutPanelSettings.Controls.Add(panelAi);
             flowLayoutPanelSettings.Controls.Add(panelTimer);
             flowLayoutPanelSettings.Controls.Add(panel1);
@@ -428,18 +428,18 @@ namespace MIN.Chess.Client.Forms
             flowLayoutPanelSettings.Name = "flowLayoutPanelSettings";
             flowLayoutPanelSettings.Size = new System.Drawing.Size(174, 381);
             flowLayoutPanelSettings.TabIndex = 13;
-            //
+            // 
             // panelAi
-            //
+            // 
             panelAi.Controls.Add(buttonChooseAi);
             panelAi.Dock = System.Windows.Forms.DockStyle.Top;
             panelAi.Location = new System.Drawing.Point(3, 3);
             panelAi.Name = "panelAi";
             panelAi.Size = new System.Drawing.Size(171, 55);
             panelAi.TabIndex = 2;
-            //
+            // 
             // buttonChooseAi
-            //
+            // 
             buttonChooseAi.BackColor = System.Drawing.Color.FromArgb(((int)((byte)167)), ((int)((byte)157)), ((int)((byte)255)));
             buttonChooseAi.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)((byte)228)), ((int)((byte)230)), ((int)((byte)240)));
             buttonChooseAi.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -452,9 +452,9 @@ namespace MIN.Chess.Client.Forms
             buttonChooseAi.Text = "Сыграть с ИИ";
             buttonChooseAi.UseVisualStyleBackColor = false;
             buttonChooseAi.Click += buttonChooseAi_Click;
-            //
+            // 
             // panelTimer
-            //
+            // 
             panelTimer.Controls.Add(timerTrackBar);
             panelTimer.Controls.Add(timerValueLabel);
             panelTimer.Controls.Add(buttonTimerPrevious);
@@ -465,17 +465,17 @@ namespace MIN.Chess.Client.Forms
             panelTimer.Name = "panelTimer";
             panelTimer.Size = new System.Drawing.Size(171, 98);
             panelTimer.TabIndex = 0;
-            //
+            // 
             // timerTrackBar
-            //
+            // 
             timerTrackBar.Location = new System.Drawing.Point(0, 55);
             timerTrackBar.Name = "timerTrackBar";
             timerTrackBar.Size = new System.Drawing.Size(168, 45);
             timerTrackBar.TabIndex = 15;
             timerTrackBar.ValueChanged += timerTrackBar_ValueChanged;
-            //
+            // 
             // timerValueLabel
-            //
+            // 
             timerValueLabel.Anchor = System.Windows.Forms.AnchorStyles.Top;
             timerValueLabel.Font = new System.Drawing.Font("Segoe UI", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)204));
             timerValueLabel.ForeColor = System.Drawing.Color.White;
@@ -485,9 +485,9 @@ namespace MIN.Chess.Client.Forms
             timerValueLabel.TabIndex = 14;
             timerValueLabel.Text = "-";
             timerValueLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            //
+            // 
             // buttonTimerPrevious
-            //
+            // 
             buttonTimerPrevious.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             buttonTimerPrevious.Font = new System.Drawing.Font("Segoe UI Emoji", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)0));
             buttonTimerPrevious.ForeColor = System.Drawing.Color.Black;
@@ -498,9 +498,9 @@ namespace MIN.Chess.Client.Forms
             buttonTimerPrevious.Text = "<";
             buttonTimerPrevious.UseVisualStyleBackColor = true;
             buttonTimerPrevious.Click += buttonTimerPrevious_Click;
-            //
+            // 
             // buttonTimerNext
-            //
+            // 
             buttonTimerNext.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             buttonTimerNext.Font = new System.Drawing.Font("Segoe UI Emoji", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)0));
             buttonTimerNext.ForeColor = System.Drawing.Color.Black;
@@ -511,9 +511,9 @@ namespace MIN.Chess.Client.Forms
             buttonTimerNext.Text = ">";
             buttonTimerNext.UseVisualStyleBackColor = true;
             buttonTimerNext.Click += buttonTimerNext_Click;
-            //
+            // 
             // timerTitle
-            //
+            // 
             timerTitle.Anchor = System.Windows.Forms.AnchorStyles.Top;
             timerTitle.AutoSize = true;
             timerTitle.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
@@ -523,9 +523,9 @@ namespace MIN.Chess.Client.Forms
             timerTitle.Size = new System.Drawing.Size(68, 21);
             timerTitle.TabIndex = 11;
             timerTitle.Text = "Таймер";
-            //
+            // 
             // panel1
-            //
+            // 
             panel1.Controls.Add(bonusTrackBar);
             panel1.Controls.Add(timerBonusValueLabel);
             panel1.Controls.Add(buttonBonusPrevious);
@@ -536,17 +536,17 @@ namespace MIN.Chess.Client.Forms
             panel1.Name = "panel1";
             panel1.Size = new System.Drawing.Size(171, 100);
             panel1.TabIndex = 1;
-            //
+            // 
             // bonusTrackBar
-            //
+            // 
             bonusTrackBar.Location = new System.Drawing.Point(0, 64);
             bonusTrackBar.Name = "bonusTrackBar";
             bonusTrackBar.Size = new System.Drawing.Size(168, 45);
             bonusTrackBar.TabIndex = 16;
             bonusTrackBar.ValueChanged += bonusTrackBar_ValueChanged;
-            //
+            // 
             // timerBonusValueLabel
-            //
+            // 
             timerBonusValueLabel.Anchor = System.Windows.Forms.AnchorStyles.Top;
             timerBonusValueLabel.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             timerBonusValueLabel.ForeColor = System.Drawing.Color.White;
@@ -556,9 +556,9 @@ namespace MIN.Chess.Client.Forms
             timerBonusValueLabel.TabIndex = 14;
             timerBonusValueLabel.Text = "0";
             timerBonusValueLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            //
+            // 
             // buttonBonusPrevious
-            //
+            // 
             buttonBonusPrevious.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             buttonBonusPrevious.Font = new System.Drawing.Font("Segoe UI Emoji", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)0));
             buttonBonusPrevious.ForeColor = System.Drawing.Color.Black;
@@ -569,9 +569,9 @@ namespace MIN.Chess.Client.Forms
             buttonBonusPrevious.Text = "<";
             buttonBonusPrevious.UseVisualStyleBackColor = true;
             buttonBonusPrevious.Click += buttonBonusPrevious_Click;
-            //
+            // 
             // buttonBonusNext
-            //
+            // 
             buttonBonusNext.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             buttonBonusNext.Font = new System.Drawing.Font("Segoe UI Emoji", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)0));
             buttonBonusNext.ForeColor = System.Drawing.Color.Black;
@@ -582,9 +582,9 @@ namespace MIN.Chess.Client.Forms
             buttonBonusNext.Text = ">";
             buttonBonusNext.UseVisualStyleBackColor = true;
             buttonBonusNext.Click += buttonBonusNext_Click;
-            //
+            // 
             // timerBonusLabel
-            //
+            // 
             timerBonusLabel.Anchor = System.Windows.Forms.AnchorStyles.Top;
             timerBonusLabel.AutoSize = true;
             timerBonusLabel.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
@@ -594,9 +594,9 @@ namespace MIN.Chess.Client.Forms
             timerBonusLabel.Size = new System.Drawing.Size(181, 21);
             timerBonusLabel.TabIndex = 11;
             timerBonusLabel.Text = "Добавление времени";
-            //
+            // 
             // buttonSaveSettings
-            //
+            // 
             buttonSaveSettings.BackColor = System.Drawing.Color.FromArgb(((int)((byte)248)), ((int)((byte)249)), ((int)((byte)255)));
             buttonSaveSettings.Dock = System.Windows.Forms.DockStyle.Fill;
             buttonSaveSettings.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)((byte)167)), ((int)((byte)157)), ((int)((byte)255)));
@@ -611,9 +611,9 @@ namespace MIN.Chess.Client.Forms
             buttonSaveSettings.Text = "Сохранить настройки";
             buttonSaveSettings.UseVisualStyleBackColor = false;
             buttonSaveSettings.Click += buttonSaveSettings_Click;
-            //
+            // 
             // MainForm
-            //
+            // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             BackColor = System.Drawing.Color.Black;

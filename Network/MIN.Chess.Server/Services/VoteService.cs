@@ -87,14 +87,13 @@ internal class VoteService
             return;
         }
 
-        if (drawVote[role] == true)
+        if (drawVote[role])
         {
             return;
         }
 
         if (!roomService.IsBothPlayersJoined())
         {
-            return;
         }
         else
         {
@@ -132,7 +131,7 @@ internal class VoteService
             return;
         }
 
-        if (restartVote[role] == true)
+        if (restartVote[role])
         {
             return;
         }
@@ -141,22 +140,26 @@ internal class VoteService
         {
             return;
         }
-        else
-        {
-            var votes = 1;
-            restartVote[role] = true;
-            if (restartVote[Player.White] && restartVote[Player.Black])
-            {
-                OnRestart?.Invoke();
-                votes = 0;
-                restartVote[Player.White] = false;
-                restartVote[Player.Black] = false;
-            }
 
-            await messageService.BroadcastAsync(new RestartVoteMessage()
-            {
-                CurrentVotes = votes
-            });
+        if (roomService.GetPlayers()[role.Opponent()]?.IsAi == true)
+        {
+            OnRestart?.Invoke();
+            return;
         }
+
+        var votes = 1;
+        restartVote[role] = true;
+        if (restartVote[Player.White] && restartVote[Player.Black])
+        {
+            OnRestart?.Invoke();
+            votes = 0;
+            restartVote[Player.White] = false;
+            restartVote[Player.Black] = false;
+        }
+
+        await messageService.BroadcastAsync(new RestartVoteMessage()
+        {
+            CurrentVotes = votes
+        });
     }
 }

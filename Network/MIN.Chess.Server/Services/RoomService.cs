@@ -2,6 +2,7 @@
 using MIN.Chess.Agents.Enums;
 using MIN.Chess.Agents.Services;
 using MIN.Chess.Logic.Enums;
+using MIN.Chess.Messages.Contracts.Models;
 using MIN.Chess.Messages.Messages;
 using MIN.Chess.Server.Helpers;
 using MIN.Ipc.Services.Contracts.Interfaces;
@@ -16,12 +17,11 @@ internal class RoomService
 {
     private readonly MessageService messageService;
     private readonly ILoggerProvider logger;
-    private readonly IChessAgentFactory agentFactory = new ChessAgentFactory();
 
-    private readonly static Dictionary<Guid, Participant> spectators = [];
+    private readonly static Dictionary<Guid, ChessPlayer> spectators = [];
     private readonly static HashSet<Guid> loadedParticipants = [];
     private readonly static Dictionary<Guid, InitRequestMessage> pendingInits = [];
-    private readonly static Dictionary<Player, Participant?> players = new()
+    private readonly static Dictionary<Player, ChessPlayer?> players = new()
     {
         { Player.White, null },
         { Player.Black, null },
@@ -99,7 +99,7 @@ internal class RoomService
     /// <summary>
     /// Получить список игроков
     /// </summary>
-    public Dictionary<Player, Participant?> GetPlayers() => players;
+    public Dictionary<Player, ChessPlayer?> GetPlayers() => players;
 
     /// <summary>
     /// Получить количество смотрящих партию
@@ -228,27 +228,11 @@ internal class RoomService
     }
 
     /// <summary>
-    /// Обработать загрузку игрока
-    /// </summary>
-    public async Task HandleAgentChoose(string senderIdString, AgentType agentType)
-    {
-        var senderId = Guid.Parse(senderIdString);
-
-        if (IsBothPlayersJoined())
-        {
-            await messageService.SendErrorAsync(senderId, "С тобой уже играет другой игрок");
-            return;
-        }
-
-        var agent = agentFactory.GetAgent(agentType);
-    }
-
-    /// <summary>
     /// Обработать присоединения участника
     /// </summary>
-    public async Task HandleParticipantJoining(Participant participant)
+    public async Task HandleParticipantJoining(ChessPlayer participant)
     {
-        if (IsBothPlayersJoined())
+        if (IsBothPlayersJoined() && !participant.IsAi)
         {
             logger.Log($"{participant.Id} joined as Spectator");
             spectators[participant.Id] = participant;

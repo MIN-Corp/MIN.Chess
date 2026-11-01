@@ -19,6 +19,7 @@ internal class GameService
     private readonly MessageService messageService;
     private readonly RoomService roomService;
     private readonly TimerService timerService;
+    private readonly AgentService agentService;
 
     public readonly static GameState GameState = new(new Board(), Player.None);
     public static bool GameStarted;
@@ -33,12 +34,14 @@ internal class GameService
         RoomService roomService,
         VoteService voteService,
         TimerService timerService,
+        AgentService agentService,
         ILoggerProvider logger)
     {
         this.logger = logger;
         this.messageService = messageService;
         this.roomService = roomService;
         this.timerService = timerService;
+        this.agentService = agentService;
 
         timerService.OnSettingsChanged += async void () => await SendStateUpdate();
         timerService.OnTimeOut += async void (player) =>
@@ -101,58 +104,74 @@ internal class GameService
     /// </summary>
     public async Task HandleMove(MoveRequestMessage moveRequestMessage)
     {
-        var senderId = Guid.Parse(moveRequestMessage.SenderId);
-        var senderRole = roomService.ResolveRole(senderId);
-
-        if (GameState.IsGameOver())
+        while (true)
         {
-            await messageService.SendErrorAsync(senderId, "Игра уже окончена");
-            return;
-        }
+            var senderId = Guid.Parse(moveRequestMessage.SenderId);
+            var senderRole = roomService.ResolveRole(senderId);
 
-        logger.Log($"moveRequestMessage received {moveRequestMessage.MoveUciNotation}");
-
-        var move = MoveParser.Parse(moveRequestMessage.MoveUciNotation, GameState.Board);
-
-        logger.Log("checking legalability . . .");
-
-        var legalMoves = GameState.AllLegalMovesFor(senderRole);
-
-        if (legalMoves.Select(x => x.ToUci()).Contains(move.ToUci()) && senderRole == GameState.CurrentPlayer)
-        {
-            GameState.MakeMove(move);
-            lastMove = move;
-        }
-        else
-        {
-            await messageService.SendErrorAsync(senderId, "Нелегальный ход");
-            await SendStateUpdate(senderId);
-            return;
-        }
-
-        timerService.ManageTimeAfterMove(senderRole);
-
-        var (whiteMs, blackMs) = timerService.GetCurrentRemainingMs();
-
-        logger.Log("move is legal, sending move update");
-
-        await messageService.BroadcastExcludingAsync(new MoveUpdateMessage()
-        {
-            MoveUci = moveRequestMessage.MoveUciNotation,
-            CurrentPlayer = GameState.CurrentPlayer,
-            WhiteMs = timerService.TimerEnabled ? whiteMs : null,
-            BlackMs = timerService.TimerEnabled ? blackMs : null,
-        }, senderId);
-
-        GameState.CheckForGameOver();
-
-        if (GameState.IsGameOver())
-        {
-            logger.Log($"game over, sending result: {JsonSerializer.Serialize(GameState.Result!.Value)}");
-            await messageService.BroadcastAsync(new GameResultMessage()
+            if (GameState.IsGameOver())
             {
-                Result = GameState.Result!.Value,
-            });
+                await messageService.SendErrorAsync(senderId, "Игра уже окончена");
+                return;
+            }
+
+            logger.Log($"moveRequestMessage received {moveRequestMessage.MoveUciNotation}");
+
+            var move = MoveParser.Parse(moveRequestMessage.MoveUciNotation, GameState.Board);
+
+            logger.Log("checking legalability . . .");
+
+            var legalMoves = GameState.AllLegalMovesFor(senderRole);
+
+            if (legalMoves.Select(x => x.ToUci()).Contains(move.ToUci()) && senderRole == GameState.CurrentPlayer)
+            {
+                GameState.MakeMove(move);
+                lastMove = move;
+            }
+            else
+            {
+                await messageService.SendErrorAsync(senderId, "Нелегальный ход");
+                await SendStateUpdate(senderId);
+                return;
+            }
+
+            timerService.ManageTimeAfterMove(senderRole);
+
+            var (whiteMs, blackMs) = timerService.GetCurrentRemainingMs();
+
+            logger.Log("move is legal, sending move update");
+
+            await messageService.BroadcastExcludingAsync(new MoveUpdateMessage()
+            {
+                MoveUci = moveRequestMessage.MoveUciNotation, CurrentPlayer = GameState.CurrentPlayer, WhiteMs = timerService.TimerEnabled ? whiteMs : null, BlackMs = timerService.TimerEnabled ? blackMs : null,
+            }, senderId);
+
+            GameState.CheckForGameOver();
+
+            if (GameState.IsGameOver())
+            {
+                logger.Log($"game over, sending result: {JsonSerializer.Serialize(GameState.Result!.Value)}");
+                await messageService.BroadcastAsync(new GameResultMessage { Result = GameState.Result!.Value, });
+                return;
+            }
+
+            if (roomService.GetPlayers()[GameState.CurrentPlayer]?.IsAi == true)
+            {
+                var agentMove = await agentService.HandleAgentMove(senderId, GameState);
+                if (agentMove == null)
+                {
+                    return;
+                }
+
+                moveRequestMessage = new MoveRequestMessage()
+                {
+                    MoveUciNotation = agentMove.ToUci(),
+                    SenderId = agentService.GetAgentId(GameState.CurrentPlayer).ToString()
+                };
+                continue;
+            }
+
+            break;
         }
     }
 

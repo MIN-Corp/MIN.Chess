@@ -1,5 +1,4 @@
 ﻿using MIN.Chess.Agents.Enums;
-using MIN.Chess.Client.Contracts.Enums;
 
 namespace MIN.Chess.Client.Forms.HelperForms;
 
@@ -24,5 +23,12 @@ public partial class AgentChoosingMenu : Form
     private void randomAgentButton_Click(object sender, EventArgs e)
     {
         OnOptionSelected?.Invoke(AgentType.Random);
+        Close();
+    }
+
+    private void commonButton1_Click(object sender, EventArgs e)
+    {
+        OnOptionSelected?.Invoke(AgentType.Smart);
+        Close();
     }
 }

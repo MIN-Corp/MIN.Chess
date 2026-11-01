@@ -18,4 +18,18 @@ public static class PieceTypeExtensions
         PieceType.Queen => 'q',
         _ => throw new ArgumentException($"Invalid promotion type: {type}"),
     };
+
+    /// <summary>
+    /// Получить цену фигуры
+    /// </summary>
+    public static float GetScore(this PieceType type) => type switch
+    {
+        PieceType.Pawn => 1.0f,
+        PieceType.Knight => 3.0f,
+        PieceType.Bishop => 3.0f,
+        PieceType.Rook => 5.0f,
+        PieceType.Queen => 10.0f,
+        PieceType.King => float.MaxValue,
+        _ => throw new ArgumentException($"Invalid promotion type: {type}"),
+    };
 }

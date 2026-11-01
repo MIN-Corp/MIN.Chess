@@ -13,7 +13,7 @@ public class ChessAgentFactory : IChessAgentFactory
         => agentType switch
         {
             AgentType.Random => new RandomizedAgent(),
-            AgentType.Smart => throw new NotImplementedException(),
+            AgentType.Smart => new SmartAgent(),
             _ => throw new ArgumentOutOfRangeException(nameof(agentType), agentType, null)
         };
 }
