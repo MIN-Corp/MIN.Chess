@@ -13,7 +13,11 @@ public class GameState
     private Dictionary<string, int> stateHistory = [];
     private int noCapturesOrPawnMoves;
     private string stateString;
-    private List<Move> moveHistory = [];
+
+    /// <summary>
+    /// Список ходов
+    /// </summary>
+    public List<Move> MoveHistory { get; private init; } = [];
 
     /// <summary>
     /// Доска с фигурами
@@ -96,7 +100,7 @@ public class GameState
     /// </summary>
     public void MakeMove(Move move)
     {
-        moveHistory.Add(move);
+        MoveHistory.Add(move);
 
         Board.SetPawnSkipPosition(CurrentPlayer, null);
         var captureOrPawn = move.Execute(Board);
@@ -120,7 +124,7 @@ public class GameState
     /// Получить последний сыгранный ход
     /// </summary>
     public Move? GetLastMove()
-        => moveHistory.LastOrDefault();
+        => MoveHistory.LastOrDefault();
 
     private IEnumerable<Move> GenerateAllLegalMoves(Player player)
     {
@@ -204,18 +208,18 @@ public class GameState
             return 0.0f;
         }
 
-        return GetOverallPieceScoreFor(CurrentPlayer) / GetOverallPieceScoreFor(CurrentPlayer.Opponent());
+        return GetOverallPieceScoreFor(CurrentPlayer) - GetOverallPieceScoreFor(CurrentPlayer.Opponent());
     }
 
     /// <summary>
     /// Копия состояния игры
     /// </summary>
     public GameState Copy()
-        => new(Board.Copy(), CurrentPlayer)
+        => new(Board.Copy(), CurrentPlayer, asCopy: true)
         {
-            moveHistory = moveHistory,
+            MoveHistory = MoveHistory.ToList(),
             stateString = stateString,
-            stateHistory = stateHistory,
+            stateHistory = stateHistory.ToDictionary(x => x.Key, x => x.Value),
             noCapturesOrPawnMoves = noCapturesOrPawnMoves,
             Result = Result
         };

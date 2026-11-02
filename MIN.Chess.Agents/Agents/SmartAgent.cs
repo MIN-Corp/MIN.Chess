@@ -10,14 +10,19 @@ namespace MIN.Chess.Agents.Agents;
 public class SmartAgent : IChessAgent
 {
     private readonly Random random = new();
-    private const int Depth = 5;
+    private const int Depth = 3;
 
-    private struct MinMaxMove
+    private readonly struct MinMaxMove
     {
         /// <summary>
         /// Ход
         /// </summary>
-        public readonly Move Move;
+        public readonly GameState State;
+
+        /// <summary>
+        /// Ход
+        /// </summary>
+        public readonly Move? BestMove;
 
         /// <summary>
         /// Выигрыш
@@ -27,18 +32,42 @@ public class SmartAgent : IChessAgent
         /// <summary>
         /// Инициализирует новый экземпляр <see cref="MinMaxMove"/>
         /// </summary>
-        public MinMaxMove(Move move, float score)
+        public MinMaxMove(Move? move, float score, GameState state)
         {
-            Move = move;
+            BestMove = move;
+            State = state;
             Score = score;
+        }
+
+        /// <summary>
+        /// Получить первый ход
+        /// </summary>
+        public Move? GetFirst(int index)
+        {
+            try
+            {
+                return State.MoveHistory[index];
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return null;
+            }
         }
     }
 
     AgentType IChessAgent.Type => AgentType.Smart;
 
     Task<Move> IChessAgent.GetMove(GameState state)
-        => Task.FromResult(MinMax(state, Depth, 1,
-            state.GetLastMove() ?? GetRandomMove(state), float.MinValue, float.MaxValue).Move);
+    {
+        var compute = MinMax(state, Depth, 1,
+                state.GetLastMove() ?? GetRandomMove(state));
+
+        Console.WriteLine($"HERE's my line: {string.Join(',', compute.State.MoveHistory.Select(x => x.ToUci()))}");
+        var desired = compute.GetFirst(state.MoveHistory.Count) ?? GetRandomMove(state);
+        Console.WriteLine($"I WANT TO WALK LIKE THIS: {desired.ToUci()}");
+
+        return Task.FromResult(desired);
+    }
 
     private Move GetRandomMove(GameState state)
     {
@@ -48,17 +77,18 @@ public class SmartAgent : IChessAgent
         return moves.ElementAt(random.Next(0, moves.Length));
     }
 
-    private MinMaxMove MinMax(GameState state, int depth, int minOrMax, Move lastMove, float alpha, float beta)
+    private MinMaxMove MinMax(GameState state, int depth, int minOrMax, Move lastMove)
     {
         var currentScore = state.GetAdvantageScore();
-        if (currentScore != 0 || !state.AllLegalMovesFor(state.CurrentPlayer).Any() || depth == 0)
+        if (state.Result.HasValue || !state.AllLegalMovesFor(state.CurrentPlayer).Any() || depth == 0)
         {
-            Console.WriteLine($"NO MOVE: {lastMove.ToUci()} SCORE: {currentScore}");
-            return new MinMaxMove(lastMove, currentScore);
+            Console.WriteLine($"NO MOVE: {lastMove.ToUci()} SCORE: {currentScore}, depth: {depth}");
+            return new MinMaxMove(lastMove, currentScore, state);
         }
 
         var bestScore = minOrMax * float.MinValue;
         Move? bestMove = null;
+        var bestClosestNeighbor = new MinMaxMove(bestMove, bestScore, state);
 
         var allMoves = state.AllLegalMovesFor(state.CurrentPlayer);
         var moves = allMoves as Move[] ?? allMoves.ToArray();
@@ -67,30 +97,19 @@ public class SmartAgent : IChessAgent
         {
             var neighbor = state.Copy();
             neighbor.MakeMove(move);
-            var bestNeighbor = MinMax(state, depth - 1, minOrMax * -1, move, alpha, beta);
-            if ((bestNeighbor.Score > bestScore && minOrMax == 1)
-                || bestNeighbor.Score < bestScore && minOrMax == -1)
-            {
-                bestScore = bestNeighbor.Score;
-                bestMove = bestNeighbor.Move;
-                if (bestScore >= alpha)
-                {
-                    alpha = bestScore;
-                }
+            bestClosestNeighbor = MinMax(neighbor, depth - 1, minOrMax * -1, move);
 
-                if (bestScore <= beta)
-                {
-                    beta = bestScore;
-                }
+            if ((bestClosestNeighbor.Score > bestScore && minOrMax == 1)
+                || (bestClosestNeighbor.Score < bestScore && minOrMax == -1))
+            {
+                continue;
             }
 
-            if (alpha >= beta)
-            {
-                break;
-            }
+            bestMove = bestClosestNeighbor.BestMove;
+            bestScore = bestClosestNeighbor.Score;
         }
 
-        Console.WriteLine($"BEST: {bestMove?.ToUci()}");
-        return new MinMaxMove(bestMove ?? GetRandomMove(state), bestScore);
+        Console.WriteLine($"BEST: {bestMove?.ToUci()}, SCORE: {bestScore}, depth: {depth}");
+        return new MinMaxMove(bestMove ?? GetRandomMove(state), bestScore, bestClosestNeighbor.State);
     }
 }
