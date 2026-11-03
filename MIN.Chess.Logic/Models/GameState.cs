@@ -187,9 +187,9 @@ public class GameState
     }
 
     /// <summary>
-    /// Оценить состояние, выигрывает ли тот, кого сейчас текущий ход
+    /// Оценить эвристическое состояние, выигрывает ли тот, кого сейчас текущий ход
     /// </summary>
-    public float GetAdvantageScore()
+    public float GetAdvantageScore(int pieceAdvantageWeight, int positionalAdvantageWeight, int attackingPiecesAdvantageWeight)
     {
         CheckForGameOver();
 
@@ -208,7 +208,16 @@ public class GameState
             return 0.0f;
         }
 
-        return GetOverallPieceScoreFor(CurrentPlayer) - GetOverallPieceScoreFor(CurrentPlayer.Opponent());
+        var pieceAdvantage = (float)Math.Pow(GetOverallPieceScoreFor(CurrentPlayer)
+                                / GetOverallPieceScoreFor(CurrentPlayer.Opponent()), pieceAdvantageWeight);
+
+        var pieceActivityAdvantage = (float)Math.Pow(GetOverallAttackingSquaresFor(CurrentPlayer)
+                                            / GetOverallAttackingSquaresFor(CurrentPlayer.Opponent()), positionalAdvantageWeight);
+
+        var attackingPiecesAdvantage = (float)Math.Pow(GetOverallAttackingPiecesFor(CurrentPlayer)
+                                                     / GetOverallAttackingPiecesFor(CurrentPlayer.Opponent()), attackingPiecesAdvantageWeight);
+
+        return pieceAdvantage + pieceActivityAdvantage + attackingPiecesAdvantage;
     }
 
     /// <summary>
@@ -227,6 +236,15 @@ public class GameState
     private float GetOverallPieceScoreFor(Player player)
         => Enum.GetValues(typeof(PieceType)).Cast<PieceType>()
             .Sum(type => Board.CountOf(player, type) * type.GetScore());
+
+    private float GetOverallAttackingSquaresFor(Player player)
+        => Board.PiecePositionsFor(player)
+            .Sum(x => (Board[x]?.GetMoves(x, Board) ?? []).Count());
+
+    private float GetOverallAttackingPiecesFor(Player player)
+        => Board.PiecePositionsFor(player).Sum(x => (Board[x]?
+            .GetMoves(x, Board) ?? []).Where(y => Board[y.ToPos] != null && Board[y.ToPos]?.Color != Board[y.FromPos]?.Color)
+            .Sum(z => Board[z.ToPos]?.Type.GetScore() ?? 0.0f));
 
     private void UpdateStateString()
     {

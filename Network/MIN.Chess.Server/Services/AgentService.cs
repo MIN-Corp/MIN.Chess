@@ -41,7 +41,7 @@ internal class AgentService
 
         var agent = agentFactory.GetAgent(agentType);
         var agentRole = roomService.ResolveRole(senderId).Opponent();
-        var agentPlayer = new ChessPlayer(agent.Type.ToString())
+        var agentPlayer = new ChessPlayer(agent.DisplayName)
         {
             IsAi = true,
             AgentType = agent.Type,

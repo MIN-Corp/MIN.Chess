@@ -15,6 +15,8 @@ public class RandomizedAgent : IChessAgent
 
     AgentType IChessAgent.Type => AgentType.Random;
 
+    string IChessAgent.DisplayName => "Рандомич";
+
     async Task<Move> IChessAgent.GetMove(GameState state)
     {
         var allMoves = state.AllLegalMovesFor(state.CurrentPlayer);

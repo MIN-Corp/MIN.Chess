@@ -126,14 +126,16 @@ public class Board
         SetHasMovedForKingAndRook(board, Player.Black, canCastlek, canCastleq);
 
         // 3. En passant
-        if (enPassant != "-")
+        if (enPassant == "-")
         {
-            var file = enPassant[0] - 'a';
-            var rank = 8 - (enPassant[1] - '0');
-            var targetPos = new Position(rank, file);
-            var currentPlayer = activeColor == "w" ? Player.White : Player.Black;
-            board.SetPawnSkipPosition(currentPlayer.Opponent(), targetPos);
+            return board;
         }
+
+        var file = enPassant[0] - 'a';
+        var rank = 8 - (enPassant[1] - '0');
+        var targetPos = new Position(rank, file);
+        var currentPlayer = activeColor == "w" ? Player.White : Player.Black;
+        board.SetPawnSkipPosition(currentPlayer.Opponent(), targetPos);
 
         return board;
     }
@@ -250,6 +252,12 @@ public class Board
     /// </summary>
     public IEnumerable<Position> PiecePositionsFor(Player player)
         => PiecePositions().Where(x => this[x]?.Color == player);
+
+    /// <summary>
+    /// Получить позиции, где находятся фигуры для указанного игрока
+    /// </summary>
+    public IEnumerable<Piece> PiecesFor(Player player)
+        => PiecePositions().Where(x => this[x]?.Color == player && this[x] != null).Select(x => this[x]!);
 
     /// <summary>
     /// Находиться ли сейчас король под угрозой

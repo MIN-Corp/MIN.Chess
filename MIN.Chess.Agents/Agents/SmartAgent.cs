@@ -12,6 +12,11 @@ public class SmartAgent : IChessAgent
 {
     private readonly Random random = new();
     private const int Depth = 3;
+    private const int PieceAdvantageWeight = 10;
+    private const int PositionalAdvantageWeight = 2;
+    private const int AttackingAdvantageWeight = 3;
+
+    string IChessAgent.DisplayName => "Магнус карлсен";
 
     private readonly struct MinMaxMove
     {
@@ -62,7 +67,7 @@ public class SmartAgent : IChessAgent
     {
         var piecesCount = state.Board.PiecePositionsFor(state.CurrentPlayer).Count()
             + state.Board.PiecePositionsFor(state.CurrentPlayer.Opponent()).Count();
-        var appropriateDepth = (int)(1 / (0.1 * piecesCount + 0.5) + Depth);
+        var appropriateDepth = (int)(1.5 / (0.1 * piecesCount + 0.5) + Depth);
 
         var compute = MinMax(state, appropriateDepth, -1,
                 state.GetLastMove() ?? GetRandomMove(state));
@@ -84,7 +89,7 @@ public class SmartAgent : IChessAgent
 
     private MinMaxMove MinMax(GameState state, int depth, int minOrMax, Move lastMove)
     {
-        var currentScore = state.GetAdvantageScore();
+        var currentScore = state.GetAdvantageScore(PieceAdvantageWeight, PositionalAdvantageWeight, AttackingAdvantageWeight);
         if (state.Result.HasValue || !state.AllLegalMovesFor(state.CurrentPlayer).Any() || depth == 0)
         {
             Console.WriteLine($"NO MOVE: {lastMove.ToUci()} SCORE: {currentScore}, depth: {depth}");

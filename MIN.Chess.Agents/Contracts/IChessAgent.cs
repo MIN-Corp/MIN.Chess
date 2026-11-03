@@ -14,6 +14,11 @@ public interface IChessAgent
     AgentType Type { get; }
 
     /// <summary>
+    /// Имя агента
+    /// </summary>
+    string DisplayName { get; }
+
+    /// <summary>
     /// Получить ход агента от состояния
     /// </summary>
     Task<Move> GetMove(GameState state);
