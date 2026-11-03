@@ -1,5 +1,6 @@
 ﻿using MIN.Chess.Agents.Contracts;
 using MIN.Chess.Agents.Enums;
+using MIN.Chess.Logic.Extensions;
 using MIN.Chess.Logic.Models;
 
 namespace MIN.Chess.Agents.Agents;
@@ -59,7 +60,11 @@ public class SmartAgent : IChessAgent
 
     Task<Move> IChessAgent.GetMove(GameState state)
     {
-        var compute = MinMax(state, Depth, 1,
+        var piecesCount = state.Board.PiecePositionsFor(state.CurrentPlayer).Count()
+            + state.Board.PiecePositionsFor(state.CurrentPlayer.Opponent()).Count();
+        var appropriateDepth = (int)(1 / (0.1 * piecesCount + 0.5) + Depth);
+
+        var compute = MinMax(state, appropriateDepth, -1,
                 state.GetLastMove() ?? GetRandomMove(state));
 
         Console.WriteLine($"HERE's my line: {string.Join(',', compute.State.MoveHistory.Select(x => x.ToUci()))}");
@@ -88,7 +93,7 @@ public class SmartAgent : IChessAgent
 
         var bestScore = minOrMax * float.MinValue;
         Move? bestMove = null;
-        var bestClosestNeighbor = new MinMaxMove(bestMove, bestScore, state);
+        GameState? bestState = null;
 
         var allMoves = state.AllLegalMovesFor(state.CurrentPlayer);
         var moves = allMoves as Move[] ?? allMoves.ToArray();
@@ -97,19 +102,18 @@ public class SmartAgent : IChessAgent
         {
             var neighbor = state.Copy();
             neighbor.MakeMove(move);
-            bestClosestNeighbor = MinMax(neighbor, depth - 1, minOrMax * -1, move);
+            var bestClosestNeighbor = MinMax(neighbor, depth - 1, minOrMax * -1, move);
 
             if ((bestClosestNeighbor.Score > bestScore && minOrMax == 1)
                 || (bestClosestNeighbor.Score < bestScore && minOrMax == -1))
             {
-                continue;
+                bestMove = bestClosestNeighbor.BestMove;
+                bestScore = bestClosestNeighbor.Score;
+                bestState = bestClosestNeighbor.State;
             }
-
-            bestMove = bestClosestNeighbor.BestMove;
-            bestScore = bestClosestNeighbor.Score;
         }
 
         Console.WriteLine($"BEST: {bestMove?.ToUci()}, SCORE: {bestScore}, depth: {depth}");
-        return new MinMaxMove(bestMove ?? GetRandomMove(state), bestScore, bestClosestNeighbor.State);
+        return new MinMaxMove(bestMove ?? GetRandomMove(state), bestScore, bestState ?? state);
     }
 }
