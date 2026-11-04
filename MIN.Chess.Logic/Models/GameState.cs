@@ -189,7 +189,7 @@ public class GameState
     /// <summary>
     /// Оценить эвристическое состояние, выигрывает ли тот, кого сейчас текущий ход
     /// </summary>
-    public float GetAdvantageScore(int pieceAdvantageWeight, int positionalAdvantageWeight, int attackingPiecesAdvantageWeight)
+    public float GetAdvantageScore(float pieceAdvantageWeight, float positionalAdvantageWeight, float attackingPiecesAdvantageWeight)
     {
         CheckForGameOver();
 
@@ -208,14 +208,14 @@ public class GameState
             return 0.0f;
         }
 
-        var pieceAdvantage = (float)Math.Pow(GetOverallPieceScoreFor(CurrentPlayer)
-                                / GetOverallPieceScoreFor(CurrentPlayer.Opponent()), pieceAdvantageWeight);
+        var pieceAdvantage = (GetOverallPieceScoreFor(CurrentPlayer)
+                                             - GetOverallPieceScoreFor(CurrentPlayer.Opponent())) * pieceAdvantageWeight;
 
-        var pieceActivityAdvantage = (float)Math.Pow(GetOverallAttackingSquaresFor(CurrentPlayer)
-                                            / GetOverallAttackingSquaresFor(CurrentPlayer.Opponent()), positionalAdvantageWeight);
+        var pieceActivityAdvantage = (GetOverallAttackingSquaresFor(CurrentPlayer)
+                                                         - GetOverallAttackingSquaresFor(CurrentPlayer.Opponent())) * positionalAdvantageWeight;
 
-        var attackingPiecesAdvantage = (float)Math.Pow(GetOverallAttackingPiecesFor(CurrentPlayer)
-                                                     / GetOverallAttackingPiecesFor(CurrentPlayer.Opponent()), attackingPiecesAdvantageWeight);
+        var attackingPiecesAdvantage = (GetOverallAttackingPiecesScoreFor(CurrentPlayer)
+                                                        - GetOverallAttackingPiecesScoreFor(CurrentPlayer.Opponent())) * attackingPiecesAdvantageWeight;
 
         return pieceAdvantage + pieceActivityAdvantage + attackingPiecesAdvantage;
     }
@@ -241,10 +241,10 @@ public class GameState
         => Board.PiecePositionsFor(player)
             .Sum(x => (Board[x]?.GetMoves(x, Board) ?? []).Count());
 
-    private float GetOverallAttackingPiecesFor(Player player)
-        => Board.PiecePositionsFor(player).Sum(x => (Board[x]?
-            .GetMoves(x, Board) ?? []).Where(y => Board[y.ToPos] != null && Board[y.ToPos]?.Color != Board[y.FromPos]?.Color)
-            .Sum(z => Board[z.ToPos]?.Type.GetScore() ?? 0.0f));
+    private float GetOverallAttackingPiecesScoreFor(Player player)
+        => Board.PiecePositionsFor(player).Select(x => (Board[x]?
+            .GetMoves(x, Board) ?? []).Where(y => Board[y.ToPos]?.Color != Board[y.FromPos]?.Color)
+            .Sum(z => Board[z.ToPos]?.Type.GetScore() ?? 0.0f)).Sum();
 
     private void UpdateStateString()
     {

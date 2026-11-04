@@ -1,4 +1,5 @@
-﻿using MIN.Chess.Agents.Contracts;
+﻿using System.Diagnostics;
+using MIN.Chess.Agents.Contracts;
 using MIN.Chess.Agents.Enums;
 using MIN.Chess.Logic.Extensions;
 using MIN.Chess.Logic.Models;
@@ -12,23 +13,19 @@ public class SmartAgent : IChessAgent
 {
     private readonly Random random = new();
     private const int Depth = 3;
-    private const int PieceAdvantageWeight = 10;
-    private const int PositionalAdvantageWeight = 2;
-    private const int AttackingAdvantageWeight = 3;
+    private const int ParallelDepth = 1;
+    private const float PieceAdvantageWeight = 20f;
+    private const float PositionalAdvantageWeight = 0.1f;
+    private const float AttackingAdvantageWeight = 0.1f;
 
-    string IChessAgent.DisplayName => "Магнус карлсен";
+    string IChessAgent.DisplayName => "Магнус Карлсен";
 
     private readonly struct MinMaxMove
     {
         /// <summary>
-        /// Ход
+        /// Состояние
         /// </summary>
         public readonly GameState State;
-
-        /// <summary>
-        /// Ход
-        /// </summary>
-        public readonly Move? BestMove;
 
         /// <summary>
         /// Выигрыш
@@ -38,9 +35,8 @@ public class SmartAgent : IChessAgent
         /// <summary>
         /// Инициализирует новый экземпляр <see cref="MinMaxMove"/>
         /// </summary>
-        public MinMaxMove(Move? move, float score, GameState state)
+        public MinMaxMove(float score, GameState state)
         {
-            BestMove = move;
             State = state;
             Score = score;
         }
@@ -63,20 +59,30 @@ public class SmartAgent : IChessAgent
 
     AgentType IChessAgent.Type => AgentType.Smart;
 
-    Task<Move> IChessAgent.GetMove(GameState state)
+    async Task<Move> IChessAgent.GetMove(GameState state)
     {
+        if (state.MoveHistory.Count <= 1)
+        {
+            return GetRandomMove(state);
+        }
+
         var piecesCount = state.Board.PiecePositionsFor(state.CurrentPlayer).Count()
             + state.Board.PiecePositionsFor(state.CurrentPlayer.Opponent()).Count();
         var appropriateDepth = (int)(1.5 / (0.1 * piecesCount + 0.5) + Depth);
 
-        var compute = MinMax(state, appropriateDepth, -1,
-                state.GetLastMove() ?? GetRandomMove(state));
+        var stopWatch = new Stopwatch();
+        stopWatch.Start();
 
-        Console.WriteLine($"HERE's my line: {string.Join(',', compute.State.MoveHistory.Select(x => x.ToUci()))}");
+        var compute = await MinMax(state, appropriateDepth, -1, ParallelDepth);
+
+        stopWatch.Stop();
+
+        Console.WriteLine($"THOUGHT FOR: {stopWatch.ElapsedMilliseconds}ms");
+        Console.WriteLine($"HERE's my line: {string.Join(',', compute.State.MoveHistory.Skip(state.MoveHistory.Count).Select(x => x.ToUci()))}");
         var desired = compute.GetFirst(state.MoveHistory.Count) ?? GetRandomMove(state);
         Console.WriteLine($"I WANT TO WALK LIKE THIS: {desired.ToUci()}");
 
-        return Task.FromResult(desired);
+        return desired;
     }
 
     private Move GetRandomMove(GameState state)
@@ -87,38 +93,58 @@ public class SmartAgent : IChessAgent
         return moves.ElementAt(random.Next(0, moves.Length));
     }
 
-    private MinMaxMove MinMax(GameState state, int depth, int minOrMax, Move lastMove)
+    private static async Task<MinMaxMove> MinMax(
+        GameState state, int depth, int minOrMax, int parallelDepth)
     {
         var currentScore = state.GetAdvantageScore(PieceAdvantageWeight, PositionalAdvantageWeight, AttackingAdvantageWeight);
-        if (state.Result.HasValue || !state.AllLegalMovesFor(state.CurrentPlayer).Any() || depth == 0)
+        if (state.Result.HasValue || depth == 0)
         {
-            Console.WriteLine($"NO MOVE: {lastMove.ToUci()} SCORE: {currentScore}, depth: {depth}");
-            return new MinMaxMove(lastMove, currentScore, state);
+            return new MinMaxMove(currentScore, state);
         }
 
-        var bestScore = minOrMax * float.MinValue;
-        Move? bestMove = null;
-        GameState? bestState = null;
+        var moves = state.AllLegalMovesFor(state.CurrentPlayer).ToArray();
 
-        var allMoves = state.AllLegalMovesFor(state.CurrentPlayer);
-        var moves = allMoves as Move[] ?? allMoves.ToArray();
+        var childDepth = depth - 1;
+        var childMinOrMax = -minOrMax;
 
-        foreach (var move in moves)
+        var results = new MinMaxMove[moves.Length];
+
+        if (parallelDepth > 0)
         {
-            var neighbor = state.Copy();
-            neighbor.MakeMove(move);
-            var bestClosestNeighbor = MinMax(neighbor, depth - 1, minOrMax * -1, move);
-
-            if ((bestClosestNeighbor.Score > bestScore && minOrMax == 1)
-                || (bestClosestNeighbor.Score < bestScore && minOrMax == -1))
+            await Parallel.ForEachAsync(
+                Enumerable.Range(0, moves.Length),
+                new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+                async (i, _) =>
+                {
+                    var neighbor = state.Copy();
+                    neighbor.MakeMove(moves[i]);
+                    results[i] = await MinMax(
+                        neighbor, childDepth, childMinOrMax, parallelDepth > 0 ? parallelDepth - 1 : 0);
+                });
+        }
+        else
+        {
+            for (var i = 0; i < moves.Length; i++)
             {
-                bestMove = bestClosestNeighbor.BestMove;
-                bestScore = bestClosestNeighbor.Score;
-                bestState = bestClosestNeighbor.State;
+                var neighbor = state.Copy();
+                neighbor.MakeMove(moves[i]);
+                results[i] = await MinMax(
+                    neighbor, childDepth, childMinOrMax, 0);
             }
         }
 
-        Console.WriteLine($"BEST: {bestMove?.ToUci()}, SCORE: {bestScore}, depth: {depth}");
-        return new MinMaxMove(bestMove ?? GetRandomMove(state), bestScore, bestState ?? state);
+        // reduce — здесь однопоточно, никакой гонки
+        var best = results[0];
+        for (var i = 1; i < results.Length; i++)
+        {
+            var r = results[i];
+            if ((minOrMax == 1 && r.Score > best.Score) ||
+                (minOrMax == -1 && r.Score < best.Score))
+            {
+                best = r;
+            }
+        }
+
+        return best; // BestMove/State уже указывают на «шаг из текущего state», как в оригинале
     }
 }
