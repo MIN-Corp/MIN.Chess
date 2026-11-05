@@ -254,12 +254,6 @@ public class Board
         => PiecePositions().Where(x => this[x]?.Color == player);
 
     /// <summary>
-    /// Получить позиции, где находятся фигуры для указанного игрока
-    /// </summary>
-    public IEnumerable<Piece> PiecesFor(Player player)
-        => PiecePositions().Where(x => this[x]?.Color == player && this[x] != null).Select(x => this[x]!);
-
-    /// <summary>
     /// Находиться ли сейчас король под угрозой
     /// </summary>
     public bool IsInCheck(Player player)

@@ -211,13 +211,20 @@ public class GameState
         var pieceAdvantage = (GetOverallPieceScoreFor(CurrentPlayer)
                                              - GetOverallPieceScoreFor(CurrentPlayer.Opponent())) * pieceAdvantageWeight;
 
+        var pieceStartActivityAdvantage = (GetPiecesStartDevelopmentFor(CurrentPlayer)
+                                      - GetPiecesStartDevelopmentFor(CurrentPlayer.Opponent())) * positionalAdvantageWeight;
+
         var pieceActivityAdvantage = (GetPiecesDevelopmentFor(CurrentPlayer)
-                                                         - GetPiecesDevelopmentFor(CurrentPlayer.Opponent())) * positionalAdvantageWeight;
+                                      - GetPiecesDevelopmentFor(CurrentPlayer.Opponent())) * positionalAdvantageWeight;
 
         var attackingPiecesAdvantage = (GetOverallAttackingPiecesScoreFor(CurrentPlayer)
                                                         - GetOverallAttackingPiecesScoreFor(CurrentPlayer.Opponent())) * attackingPiecesAdvantageWeight;
 
-        return pieceAdvantage + pieceActivityAdvantage + attackingPiecesAdvantage;
+        var defendingPiecesAdvantage = (GetOverallDefendingPiecesScoreFor(CurrentPlayer)
+                                        - GetOverallDefendingPiecesScoreFor(CurrentPlayer.Opponent())) * attackingPiecesAdvantageWeight;
+
+        return pieceAdvantage + pieceStartActivityAdvantage + pieceActivityAdvantage
+            + defendingPiecesAdvantage + attackingPiecesAdvantage;
     }
 
     /// <summary>
@@ -237,6 +244,10 @@ public class GameState
         => Enum.GetValues(typeof(PieceType)).Cast<PieceType>()
             .Sum(type => Board.CountOf(player, type) * type.GetScore());
 
+    private float GetPiecesStartDevelopmentFor(Player player)
+        => Board.PiecePositionsFor(player)
+            .Sum(position => Board[position]!.HasMoved ? 0 : 1);
+
     private float GetPiecesDevelopmentFor(Player player)
         => Board.PiecePositionsFor(player)
             .Sum(position => player == Player.White ? 8 - position.Row : position.Row);
@@ -244,6 +255,11 @@ public class GameState
     private float GetOverallAttackingPiecesScoreFor(Player player)
         => Board.PiecePositionsFor(player).Select(x => (Board[x]?
             .GetMoves(x, Board) ?? []).Where(y => Board[y.ToPos]?.Color != Board[y.FromPos]?.Color)
+            .Sum(z => Board[z.ToPos]?.Type.GetScore() ?? 0.0f)).Sum();
+
+    private float GetOverallDefendingPiecesScoreFor(Player player)
+        => Board.PiecePositionsFor(player).Select(x => (Board[x]?
+                .GetMoves(x, Board) ?? []).Where(y => Board[y.ToPos]?.Color == Board[y.FromPos]?.Color)
             .Sum(z => Board[z.ToPos]?.Type.GetScore() ?? 0.0f)).Sum();
 
     private void UpdateStateString()

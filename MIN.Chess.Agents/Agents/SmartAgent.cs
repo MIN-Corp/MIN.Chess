@@ -67,7 +67,7 @@ public class SmartAgent : IChessAgent
 
         var piecesCount = state.Board.PiecePositionsFor(state.CurrentPlayer).Count()
             + state.Board.PiecePositionsFor(state.CurrentPlayer.Opponent()).Count();
-        var appropriateDepth = (int)(21 / Math.Sqrt(piecesCount + 9));
+        var appropriateDepth = (int)(24 / Math.Sqrt(piecesCount + 20));
 
         var stopWatch = new Stopwatch();
         stopWatch.Start();
