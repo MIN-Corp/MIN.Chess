@@ -195,12 +195,12 @@ public class GameState
 
         if (Result.HasValue && Result.Value.Winner == CurrentPlayer)
         {
-            return float.MaxValue;
+            return float.PositiveInfinity;
         }
 
         if (Result.HasValue && Result.Value.Winner != CurrentPlayer)
         {
-            return float.MinValue;
+            return float.NegativeInfinity;
         }
 
         if (Result.HasValue)
@@ -211,8 +211,8 @@ public class GameState
         var pieceAdvantage = (GetOverallPieceScoreFor(CurrentPlayer)
                                              - GetOverallPieceScoreFor(CurrentPlayer.Opponent())) * pieceAdvantageWeight;
 
-        var pieceActivityAdvantage = (GetOverallAttackingSquaresFor(CurrentPlayer)
-                                                         - GetOverallAttackingSquaresFor(CurrentPlayer.Opponent())) * positionalAdvantageWeight;
+        var pieceActivityAdvantage = (GetPiecesDevelopmentFor(CurrentPlayer)
+                                                         - GetPiecesDevelopmentFor(CurrentPlayer.Opponent())) * positionalAdvantageWeight;
 
         var attackingPiecesAdvantage = (GetOverallAttackingPiecesScoreFor(CurrentPlayer)
                                                         - GetOverallAttackingPiecesScoreFor(CurrentPlayer.Opponent())) * attackingPiecesAdvantageWeight;
@@ -237,9 +237,9 @@ public class GameState
         => Enum.GetValues(typeof(PieceType)).Cast<PieceType>()
             .Sum(type => Board.CountOf(player, type) * type.GetScore());
 
-    private float GetOverallAttackingSquaresFor(Player player)
+    private float GetPiecesDevelopmentFor(Player player)
         => Board.PiecePositionsFor(player)
-            .Sum(x => (Board[x]?.GetMoves(x, Board) ?? []).Count());
+            .Sum(position => player == Player.White ? 8 - position.Row : position.Row);
 
     private float GetOverallAttackingPiecesScoreFor(Player player)
         => Board.PiecePositionsFor(player).Select(x => (Board[x]?

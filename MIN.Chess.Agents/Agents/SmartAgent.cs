@@ -12,11 +12,10 @@ namespace MIN.Chess.Agents.Agents;
 public class SmartAgent : IChessAgent
 {
     private readonly Random random = new();
-    private const int Depth = 3;
-    private const int ParallelDepth = 1;
+    private const int ParallelDepth = 2;
     private const float PieceAdvantageWeight = 20f;
     private const float PositionalAdvantageWeight = 0.1f;
-    private const float AttackingAdvantageWeight = 0.1f;
+    private const float AttackingAdvantageWeight = 0.01f;
 
     string IChessAgent.DisplayName => "Магнус Карлсен";
 
@@ -68,19 +67,19 @@ public class SmartAgent : IChessAgent
 
         var piecesCount = state.Board.PiecePositionsFor(state.CurrentPlayer).Count()
             + state.Board.PiecePositionsFor(state.CurrentPlayer.Opponent()).Count();
-        var appropriateDepth = (int)(1.5 / (0.1 * piecesCount + 0.5) + Depth);
+        var appropriateDepth = (int)(21 / Math.Sqrt(piecesCount + 9));
 
         var stopWatch = new Stopwatch();
         stopWatch.Start();
 
-        var compute = await MinMax(state, appropriateDepth, -1, ParallelDepth);
+        var compute = await MinMax(state, appropriateDepth, appropriateDepth % 2 == 0 ? 1 : -1, ParallelDepth);
 
         stopWatch.Stop();
 
         Console.WriteLine($"THOUGHT FOR: {stopWatch.ElapsedMilliseconds}ms");
+        Console.WriteLine($"FORESAW {appropriateDepth} MOVES AHEAD");
         Console.WriteLine($"HERE's my line: {string.Join(',', compute.State.MoveHistory.Skip(state.MoveHistory.Count).Select(x => x.ToUci()))}");
         var desired = compute.GetFirst(state.MoveHistory.Count) ?? GetRandomMove(state);
-        Console.WriteLine($"I WANT TO WALK LIKE THIS: {desired.ToUci()}");
 
         return desired;
     }
@@ -97,6 +96,11 @@ public class SmartAgent : IChessAgent
         GameState state, int depth, int minOrMax, int parallelDepth)
     {
         var currentScore = state.GetAdvantageScore(PieceAdvantageWeight, PositionalAdvantageWeight, AttackingAdvantageWeight);
+        if (float.IsNegativeInfinity(currentScore) && minOrMax == -1)
+        {
+            currentScore = float.PositiveInfinity;
+        }
+
         if (state.Result.HasValue || depth == 0)
         {
             return new MinMaxMove(currentScore, state);
