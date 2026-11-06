@@ -29,7 +29,7 @@ public static class PieceTypeExtensions
         PieceType.Bishop => 3.0f,
         PieceType.Rook => 5.0f,
         PieceType.Queen => 10.0f,
-        PieceType.King => 0.0f,
+        PieceType.King => 22.0f,
         _ => throw new ArgumentException($"Invalid promotion type: {type}"),
     };
 }

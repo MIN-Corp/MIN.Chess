@@ -223,6 +223,10 @@ public class GameState
         var defendingPiecesAdvantage = (GetOverallDefendingPiecesScoreFor(CurrentPlayer)
                                         - GetOverallDefendingPiecesScoreFor(CurrentPlayer.Opponent())) * attackingPiecesAdvantageWeight;
 
+        //Console.WriteLine($"pieceAdvantage: {pieceAdvantage}," +
+        //    $"pieceStartActivityAdvantage: {pieceStartActivityAdvantage}, pieceActivityAdvantage: {pieceActivityAdvantage} " +
+        //    $"attackingPiecesAdvantage: {attackingPiecesAdvantage} + defendingPiecesAdvantage: {defendingPiecesAdvantage}");
+
         return pieceAdvantage + pieceStartActivityAdvantage + pieceActivityAdvantage
             + defendingPiecesAdvantage + attackingPiecesAdvantage;
     }
@@ -254,13 +258,13 @@ public class GameState
 
     private float GetOverallAttackingPiecesScoreFor(Player player)
         => Board.PiecePositionsFor(player).Select(x => (Board[x]?
-            .GetMoves(x, Board) ?? []).Where(y => Board[y.ToPos]?.Color != Board[y.FromPos]?.Color)
-            .Sum(z => Board[z.ToPos]?.Type.GetScore() ?? 0.0f)).Sum();
+            .GetPremovePositions(x, Board) ?? []).Where(y => Board[x]?.Color != Board[y]?.Color)
+            .Sum(z => Board[z]?.Type.GetScore() ?? 0.0f)).Sum();
 
     private float GetOverallDefendingPiecesScoreFor(Player player)
         => Board.PiecePositionsFor(player).Select(x => (Board[x]?
-                .GetMoves(x, Board) ?? []).Where(y => Board[y.ToPos]?.Color == Board[y.FromPos]?.Color)
-            .Sum(z => Board[z.ToPos]?.Type.GetScore() ?? 0.0f)).Sum();
+                .GetPremovePositions(x, Board) ?? []).Where(y => Board[x]?.Color == Board[y]?.Color)
+            .Sum(z => Board[z]?.Type.GetScore() ?? 0.0f)).Sum();
 
     private void UpdateStateString()
     {

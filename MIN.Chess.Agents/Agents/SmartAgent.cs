@@ -73,15 +73,41 @@ public class SmartAgent : IChessAgent
         stopWatch.Start();
 
         var compute = await MinMax(state, appropriateDepth, appropriateDepth % 2 == 0 ? 1 : -1, ParallelDepth);
+        var firstLine = compute.FirstOrDefault();
 
         stopWatch.Stop();
 
         Console.WriteLine($"THOUGHT FOR: {stopWatch.ElapsedMilliseconds}ms");
         Console.WriteLine($"FORESAW {appropriateDepth} MOVES AHEAD");
-        Console.WriteLine($"HERE's my line: {string.Join(',', compute.State.MoveHistory.Skip(state.MoveHistory.Count).Select(x => x.ToUci()))}");
-        var desired = compute.GetFirst(state.MoveHistory.Count) ?? GetRandomMove(state);
+        Console.WriteLine($"I THINK I AM {firstLine.Score}");
 
-        return desired;
+        for (var line = 0; line < compute.Length; line++)
+        {
+            Console.WriteLine($"HERE's my {line + 1} line ({compute[line].Score}): {string.Join(',', compute[line].State.MoveHistory.Skip(state.MoveHistory.Count).Select(x => x.ToUci()))}");
+        }
+
+        var desired = firstLine.GetFirst(state.MoveHistory.Count) ?? GetRandomMove(state);
+
+        var stopWatch2 = new Stopwatch();
+        stopWatch2.Start();
+
+        var compute2 = await MinMax(state, 4, 1, ParallelDepth, compute.Select(x => x.GetFirst(state.MoveHistory.Count) ?? GetRandomMove(state)).Take(5).ToArray());
+        var firstLine2 = compute.FirstOrDefault();
+
+        stopWatch2.Stop();
+
+        Console.WriteLine($"THOUGHT FOR: {stopWatch2.ElapsedMilliseconds}ms");
+        Console.WriteLine($"FORESAW {appropriateDepth} MOVES AHEAD");
+        Console.WriteLine($"I THINK I AM {firstLine2.Score}");
+
+        for (var line = 0; line < compute2.Length; line++)
+        {
+            Console.WriteLine($"HERE's my {line + 1} line ({compute2[line].Score}): {string.Join(',', compute2[line].State.MoveHistory.Skip(state.MoveHistory.Count).Select(x => x.ToUci()))}");
+        }
+
+        var desired2 = firstLine2.GetFirst(state.MoveHistory.Count) ?? GetRandomMove(state);
+
+        return desired2;
     }
 
     private Move GetRandomMove(GameState state)
@@ -92,8 +118,8 @@ public class SmartAgent : IChessAgent
         return moves.ElementAt(random.Next(0, moves.Length));
     }
 
-    private static async Task<MinMaxMove> MinMax(
-        GameState state, int depth, int minOrMax, int parallelDepth)
+    private static async Task<MinMaxMove[]> MinMax(GameState state, int depth,
+        int minOrMax, int parallelDepth, Move[]? selectedMoves = null)
     {
         var currentScore = state.GetAdvantageScore(PieceAdvantageWeight, PositionalAdvantageWeight, AttackingAdvantageWeight);
         if (float.IsNegativeInfinity(currentScore) && minOrMax == -1)
@@ -103,10 +129,10 @@ public class SmartAgent : IChessAgent
 
         if (state.Result.HasValue || depth == 0)
         {
-            return new MinMaxMove(currentScore, state);
+            return [new MinMaxMove(currentScore, state)];
         }
 
-        var moves = state.AllLegalMovesFor(state.CurrentPlayer).ToArray();
+        var moves = selectedMoves ?? state.AllLegalMovesFor(state.CurrentPlayer).ToArray();
 
         var childDepth = depth - 1;
         var childMinOrMax = -minOrMax;
@@ -122,8 +148,9 @@ public class SmartAgent : IChessAgent
                 {
                     var neighbor = state.Copy();
                     neighbor.MakeMove(moves[i]);
-                    results[i] = await MinMax(
+                    var bestMoves = await MinMax(
                         neighbor, childDepth, childMinOrMax, parallelDepth > 0 ? parallelDepth - 1 : 0);
+                    results[i] = bestMoves[0];
                 });
         }
         else
@@ -132,23 +159,23 @@ public class SmartAgent : IChessAgent
             {
                 var neighbor = state.Copy();
                 neighbor.MakeMove(moves[i]);
-                results[i] = await MinMax(
+                var bestMoves = await MinMax(
                     neighbor, childDepth, childMinOrMax, 0);
+                results[i] = bestMoves[0];
             }
         }
 
-        // reduce — здесь однопоточно, никакой гонки
-        var best = results[0];
-        for (var i = 1; i < results.Length; i++)
+        var best = results;
+
+        if (minOrMax == 1)
         {
-            var r = results[i];
-            if ((minOrMax == 1 && r.Score > best.Score) ||
-                (minOrMax == -1 && r.Score < best.Score))
-            {
-                best = r;
-            }
+            best = results.OrderByDescending(x => x.Score).ToArray();
+        }
+        else if (minOrMax == -1)
+        {
+            best = results.OrderBy(x => x.Score).ToArray();
         }
 
-        return best; // BestMove/State уже указывают на «шаг из текущего state», как в оригинале
+        return best;
     }
 }
