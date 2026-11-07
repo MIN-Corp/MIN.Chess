@@ -1,4 +1,5 @@
-﻿using MIN.Chess.Messages;
+﻿using MIN.Chess.Agents.Enums;
+using MIN.Chess.Messages;
 using MIN.Chess.Messages.Contracts.Models;
 using MIN.Chess.Messages.Messages;
 using MIN.Ipc.Services.Contracts.Interfaces;
@@ -88,6 +89,14 @@ internal class NetworkService
     /// Отправить оповещение о загрузке
     /// </summary>
     public Task SendPlayerLoadedAsync() => SendMessage(new PlayerLoadedMessage());
+
+    /// <summary>
+    /// Отправить желание сыграть с агентом
+    /// </summary>
+    public Task SendAgentChooseAsync(AgentType type) => SendMessage(new AgentChooseMessage()
+    {
+        AgentType = type
+    });
 
     /// <summary>
     /// Отправить настройки

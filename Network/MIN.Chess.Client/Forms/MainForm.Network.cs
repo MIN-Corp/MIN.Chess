@@ -4,6 +4,7 @@ using MIN.Chess.Logic.Models;
 using MIN.Chess.Logic.Models.Coordination;
 using MIN.Chess.Logic.Models.Moves;
 using MIN.Chess.Logic.Services;
+using MIN.Chess.Messages.Contracts.Models;
 using MIN.Chess.Messages.Messages;
 using MIN.Ipc.Services.Contracts.Interfaces;
 using MIN.Ipc.Services.Contracts.Models;
@@ -12,7 +13,7 @@ namespace MIN.Chess.Client.Forms;
 
 public partial class MainForm
 {
-    private Dictionary<Player, Participant?> players = [];
+    private Dictionary<Player, ChessPlayer?> players = [];
     private GameState? gameState;
     private Player? role;
     private Participant? participant;
@@ -219,7 +220,7 @@ public partial class MainForm
             case PlayerConnectedMessage playerConnectedMessage:
                 if (playerConnectedMessage.Role != Player.None)
                 {
-                    players[playerConnectedMessage.Role] = playerConnectedMessage.Participant;
+                    players[playerConnectedMessage.Role] = new ChessPlayer(playerConnectedMessage.Participant);
                     changeRoleButton.Visible = CountPlayers() == 1 && role!.Value == Player.None;
 
                     if (participant?.Id == playerConnectedMessage.Participant.Id && role!.Value == Player.None)

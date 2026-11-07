@@ -1,4 +1,6 @@
-﻿namespace MIN.Chess.Client.Forms;
+﻿using MIN.Chess.Client.Forms.HelperForms;
+
+namespace MIN.Chess.Client.Forms;
 
 public partial class MainForm
 {
@@ -52,5 +54,15 @@ public partial class MainForm
     private async void buttonSaveSettings_Click(object sender, EventArgs e)
     {
         await network.SendGameSettingsAsync(timerMinutes[timerIndex], bonusSeconds[bonusIndex]);
+    }
+
+    private void buttonChooseAi_Click(object sender, EventArgs e)
+    {
+        var chose = new AgentChoosingMenu();
+        chose.OnOptionSelected += async void (type) =>
+        {
+            await network.SendAgentChooseAsync(type);
+        };
+        chose.ShowDialog();
     }
 }

@@ -19,6 +19,7 @@ internal class GameService
     private readonly MessageService messageService;
     private readonly RoomService roomService;
     private readonly TimerService timerService;
+    private readonly AgentService agentService;
 
     public readonly static GameState GameState = new(new Board(), Player.None);
     public static bool GameStarted;
@@ -33,12 +34,14 @@ internal class GameService
         RoomService roomService,
         VoteService voteService,
         TimerService timerService,
+        AgentService agentService,
         ILoggerProvider logger)
     {
         this.logger = logger;
         this.messageService = messageService;
         this.roomService = roomService;
         this.timerService = timerService;
+        this.agentService = agentService;
 
         timerService.OnSettingsChanged += async void () => await SendStateUpdate();
         timerService.OnTimeOut += async void (player) =>
@@ -53,7 +56,7 @@ internal class GameService
         {
             if (role != Player.None)
             {
-                await ManangeStartGameStateOutOfPlayerPresence();
+                await ManageStartGameStateOutOfPlayerPresence();
             }
         };
         roomService.OnPlayerLeft += (player) =>
@@ -70,7 +73,7 @@ internal class GameService
         voteService.OnRestart += async void () =>
         {
             Restart();
-            await ManangeStartGameStateOutOfPlayerPresence();
+            await ManageStartGameStateOutOfPlayerPresence();
         };
         voteService.OnResign += async void (winner) =>
         {
@@ -92,7 +95,7 @@ internal class GameService
     public async Task HandleStateUpdate(INetworkMessage message)
     {
         logger.Log("StateUpdateRequestMessage received");
-        logger.Log($"sending gamestate {GameState.ToString()}");
+        logger.Log($"sending game state {GameState}");
         await SendStateUpdate(Guid.Parse(message.SenderId));
     }
 
@@ -101,58 +104,74 @@ internal class GameService
     /// </summary>
     public async Task HandleMove(MoveRequestMessage moveRequestMessage)
     {
-        var senderId = Guid.Parse(moveRequestMessage.SenderId);
-        var senderRole = roomService.ResolveRole(senderId);
-
-        if (GameState.IsGameOver())
+        while (true)
         {
-            await messageService.SendErrorAsync(senderId, "Игра уже окончена");
-            return;
-        }
+            var senderId = Guid.Parse(moveRequestMessage.SenderId);
+            var senderRole = roomService.ResolveRole(senderId);
 
-        logger.Log($"moveRequestMessage received {moveRequestMessage.MoveUciNotation}");
-
-        var move = MoveParser.Parse(moveRequestMessage.MoveUciNotation, GameState.Board);
-
-        logger.Log("checking legalability . . .");
-
-        var legalMoves = GameState.AllLegalMovesFor(senderRole);
-
-        if (legalMoves.Select(x => x.ToUci()).Contains(move.ToUci()) && senderRole == GameState.CurrentPlayer)
-        {
-            GameState.MakeMove(move);
-            lastMove = move;
-        }
-        else
-        {
-            await messageService.SendErrorAsync(senderId, "Нелегальный ход");
-            await SendStateUpdate(senderId);
-            return;
-        }
-
-        timerService.ManageTimeAfterMove(senderRole);
-
-        var (whiteMs, blackMs) = timerService.GetCurrentRemainingMs();
-
-        logger.Log("move is legal, sending move update");
-
-        await messageService.BroadcastExcludingAsync(new MoveUpdateMessage()
-        {
-            MoveUci = moveRequestMessage.MoveUciNotation,
-            CurrentPlayer = GameState.CurrentPlayer,
-            WhiteMs = timerService.TimerEnabled ? whiteMs : null,
-            BlackMs = timerService.TimerEnabled ? blackMs : null,
-        }, senderId);
-
-        GameState.CheckForGameOver();
-
-        if (GameState.IsGameOver())
-        {
-            logger.Log($"game over, sending result: {JsonSerializer.Serialize(GameState.Result!.Value)}");
-            await messageService.BroadcastAsync(new GameResultMessage()
+            if (GameState.IsGameOver())
             {
-                Result = GameState.Result!.Value,
-            });
+                await messageService.SendErrorAsync(senderId, "Игра уже окончена");
+                return;
+            }
+
+            logger.Log($"moveRequestMessage received {moveRequestMessage.MoveUciNotation}");
+
+            var move = MoveParser.Parse(moveRequestMessage.MoveUciNotation, GameState.Board);
+
+            logger.Log("checking legalability . . .");
+
+            var legalMoves = GameState.AllLegalMovesFor(senderRole);
+
+            if (legalMoves.Select(x => x.ToUci()).Contains(move.ToUci()) && senderRole == GameState.CurrentPlayer)
+            {
+                GameState.MakeMove(move);
+                lastMove = move;
+            }
+            else
+            {
+                await messageService.SendErrorAsync(senderId, "Нелегальный ход");
+                await SendStateUpdate(senderId);
+                return;
+            }
+
+            timerService.ManageTimeAfterMove(senderRole);
+
+            var (whiteMs, blackMs) = timerService.GetCurrentRemainingMs();
+
+            logger.Log("move is legal, sending move update");
+
+            await messageService.BroadcastExcludingAsync(new MoveUpdateMessage()
+            {
+                MoveUci = moveRequestMessage.MoveUciNotation, CurrentPlayer = GameState.CurrentPlayer, WhiteMs = timerService.TimerEnabled ? whiteMs : null, BlackMs = timerService.TimerEnabled ? blackMs : null,
+            }, senderId);
+
+            GameState.CheckForGameOver();
+
+            if (GameState.IsGameOver())
+            {
+                logger.Log($"game over, sending result: {JsonSerializer.Serialize(GameState.Result!.Value)}");
+                await messageService.BroadcastAsync(new GameResultMessage { Result = GameState.Result!.Value, });
+                return;
+            }
+
+            if (roomService.GetPlayers()[GameState.CurrentPlayer]?.IsAi == true)
+            {
+                var agentMove = await agentService.HandleAgentMove(senderId, GameState);
+                if (agentMove == null)
+                {
+                    return;
+                }
+
+                moveRequestMessage = new MoveRequestMessage()
+                {
+                    MoveUciNotation = agentMove.ToUci(),
+                    SenderId = agentService.GetAgentId(GameState.CurrentPlayer).ToString()
+                };
+                continue;
+            }
+
+            break;
         }
     }
 
@@ -186,7 +205,7 @@ internal class GameService
         timerService.StopTimer();
     }
 
-    private async Task ManangeStartGameStateOutOfPlayerPresence()
+    private async Task ManageStartGameStateOutOfPlayerPresence()
     {
         if (roomService.IsBothPlayersJoined())
         {
@@ -214,7 +233,7 @@ internal class GameService
     }
 
     /// <summary>
-    /// Отправить информацию об игре и учатснике
+    /// Отправить информацию об игре и участнике
     /// </summary>
     public async Task SendInitResponse(Participant participant)
     {
@@ -240,7 +259,7 @@ internal class GameService
     /// <summary>
     /// Отправить обновление состояния всем участникам
     /// </summary>
-    public async Task SendStateUpdate(Guid? recepientId = null)
+    public async Task SendStateUpdate(Guid? recipientId = null)
     {
         var (whiteMs, blackMs) = timerService.GetCurrentRemainingMs();
         logger.Log($"Sending state update: whiteMs={whiteMs}ms, blackMs={blackMs}ms");
@@ -255,9 +274,9 @@ internal class GameService
             TimerBonusSeconds = timerService.TimerBonusMs / 1000
         };
 
-        if (recepientId != null)
+        if (recipientId != null)
         {
-            await messageService.SendToAsync(stateUpdate, recepientId.Value);
+            await messageService.SendToAsync(stateUpdate, recipientId.Value);
             return;
         }
 

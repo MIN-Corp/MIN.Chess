@@ -126,14 +126,16 @@ public class Board
         SetHasMovedForKingAndRook(board, Player.Black, canCastlek, canCastleq);
 
         // 3. En passant
-        if (enPassant != "-")
+        if (enPassant == "-")
         {
-            var file = enPassant[0] - 'a';
-            var rank = 8 - (enPassant[1] - '0');
-            var targetPos = new Position(rank, file);
-            var currentPlayer = activeColor == "w" ? Player.White : Player.Black;
-            board.SetPawnSkipPosition(currentPlayer.Opponent(), targetPos);
+            return board;
         }
+
+        var file = enPassant[0] - 'a';
+        var rank = 8 - (enPassant[1] - '0');
+        var targetPos = new Position(rank, file);
+        var currentPlayer = activeColor == "w" ? Player.White : Player.Black;
+        board.SetPawnSkipPosition(currentPlayer.Opponent(), targetPos);
 
         return board;
     }

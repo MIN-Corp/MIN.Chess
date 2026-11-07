@@ -27,7 +27,7 @@ public record struct Result
     }
 
     /// <summary>
-    /// <inheritdoc/>
+    /// Победа
     /// </summary>
     public static Result Win(Player winner)
         => new(winner, EndReason.CheckMate);

@@ -1,4 +1,6 @@
-﻿using MIN.Chess.Messages;
+﻿using MIN.Chess.Agents.Services;
+using MIN.Chess.Messages;
+using MIN.Chess.Messages.Contracts.Models;
 using MIN.Chess.Messages.Messages;
 using MIN.Chess.Server.Helpers;
 using MIN.Ipc.Services;
@@ -14,11 +16,11 @@ internal class GameServerService
 {
     private readonly IClientProcessBridge bridge = new ClientProcessBridge();
     private readonly ILoggerProvider logger;
-    private readonly MessageService messageService;
     private readonly VoteService voteService;
     private readonly GameService gameService;
     private readonly RoomService roomService;
     private readonly TimerService timerService;
+    private readonly AgentService  agentService;
     private readonly CancellationTokenSource appCts = new();
     private const int ConnectionTimeoutMs = 5_000;
 
@@ -32,11 +34,12 @@ internal class GameServerService
         this.logger = logger;
         bridge.RegisterAllFromAnchor<IChessMessagesAnchor>();
 
-        messageService = new(bridge, appCts);
-        roomService = new(messageService, logger);
-        voteService = new(roomService, messageService, logger);
-        timerService = new(messageService, roomService, logger, appCts);
-        gameService = new(messageService, roomService, voteService, timerService, logger);
+        var messageService = new MessageService(bridge, appCts);
+        roomService = new RoomService(messageService, logger);
+        agentService = new AgentService(messageService, roomService, new ChessAgentFactory());
+        voteService = new VoteService(roomService, messageService, logger);
+        timerService = new TimerService(messageService, roomService, logger, appCts);
+        gameService = new GameService(messageService, roomService, voteService, timerService, agentService, logger);
     }
 
     /// <summary>
@@ -78,7 +81,7 @@ internal class GameServerService
 
     private async void ParticipantConnected(object? sender, Participant participant)
     {
-        await roomService.HandleParticipantJoining(participant);
+        await roomService.HandleParticipantJoining(new ChessPlayer(participant));
     }
 
     private async void ParticipantDisconnected(object? sender, Guid participantId)
@@ -120,6 +123,10 @@ internal class GameServerService
 
             case PlayerLoadedMessage _:
                 await roomService.HandlePlayerLoaded(message.SenderId);
+                break;
+
+            case AgentChooseMessage agentChooseMessage:
+                await agentService.HandleAgentChoose(message.SenderId, agentChooseMessage.AgentType);
                 break;
 
             case GameSettingsMessage gameSettingsMessage:
