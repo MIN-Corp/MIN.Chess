@@ -193,12 +193,12 @@ public class GameState
     {
         CheckForGameOver();
 
-        if (Result.HasValue && Result.Value.Winner == CurrentPlayer)
+        if (Result.HasValue && Result.Value.Winner == CurrentPlayer && Result.Value.Reason == EndReason.CheckMate)
         {
             return float.PositiveInfinity;
         }
 
-        if (Result.HasValue && Result.Value.Winner != CurrentPlayer)
+        if (Result.HasValue && Result.Value.Winner != CurrentPlayer && Result.Value.Reason == EndReason.CheckMate)
         {
             return float.NegativeInfinity;
         }
@@ -220,11 +220,13 @@ public class GameState
         var attackingPiecesAdvantage = (GetOverallAttackingPiecesScoreFor(CurrentPlayer)
                                                         - GetOverallAttackingPiecesScoreFor(CurrentPlayer.Opponent())) * attackingPiecesAdvantageWeight;
 
-        var defendingPiecesAdvantage = (GetOverallDefendingPiecesScoreFor(CurrentPlayer)
-                                        - GetOverallDefendingPiecesScoreFor(CurrentPlayer.Opponent())) * attackingPiecesAdvantageWeight;
+        // var defendingPiecesAdvantage = (GetOverallDefendingPiecesScoreFor(CurrentPlayer)
+        //                                 - GetOverallDefendingPiecesScoreFor(CurrentPlayer.Opponent())) * attackingPiecesAdvantageWeight;
 
-        return pieceAdvantage + pieceStartActivityAdvantage + pieceActivityAdvantage
-            + defendingPiecesAdvantage + attackingPiecesAdvantage;
+        var kingSafetyAdvantage = (GetKingSafetyAdvantage(CurrentPlayer)
+                                        - GetKingSafetyAdvantage(CurrentPlayer.Opponent())) * positionalAdvantageWeight;
+
+        return pieceAdvantage + pieceStartActivityAdvantage + pieceActivityAdvantage + attackingPiecesAdvantage + kingSafetyAdvantage;
     }
 
     /// <summary>
@@ -246,7 +248,7 @@ public class GameState
 
     private float GetPiecesStartDevelopmentFor(Player player)
         => Board.PiecePositionsFor(player)
-            .Sum(position => Board[position]!.HasMoved ? 0 : 1);
+            .Sum(position => Board[position]!.HasMoved ? 1 : 0);
 
     private float GetPiecesDevelopmentFor(Player player)
         => Board.PiecePositionsFor(player)
@@ -256,6 +258,13 @@ public class GameState
         => Board.PiecePositionsFor(player).Select(x => (Board[x]?
             .GetMoves(x, Board) ?? []).Where(y => Board[y.ToPos]?.Color != Board[y.FromPos]?.Color)
             .Sum(z => Board[z.ToPos]?.Type.GetScore() ?? 0.0f)).Sum();
+
+    private float GetKingSafetyAdvantage(Player player)
+    {
+        var kingPosition = Board.FindPiece(player, PieceType.King);
+        return Board[kingPosition]!.GetPremovePositions(kingPosition, Board).Where(x => Board[x]?.Color == player)
+            .Sum(y => Board[y]?.Type.GetScore() ?? 0.0f);
+    }
 
     private float GetOverallDefendingPiecesScoreFor(Player player)
         => Board.PiecePositionsFor(player).Select(x => (Board[x]?
