@@ -54,6 +54,11 @@ internal class AgentService
         await roomService.HandleParticipantJoining(agentPlayer);
     }
 
+    // TODO
+    // HandleAgentChange(message, type): sender must be a player; opponent seat must be AI → new ChessPlayer + swap agents/agentPlayers entries → roomService.ReplacePlayer(...). No restart, no OnPlayerLeft — game continues.
+    // HandleAgentRemove(message): same validation → clear agents/agentPlayers entry → roomService.RemovePlayer(...) → fires existing OnPlayerLeft → game restarts, seat opens for join/spectator-takeover.
+    // Also add sender-is-player validation to existing HandleAgentChoose (currently a spectator can trigger the Player.None seat bug).
+
     /// <summary>
     /// Обработать ход агента
     /// </summary>

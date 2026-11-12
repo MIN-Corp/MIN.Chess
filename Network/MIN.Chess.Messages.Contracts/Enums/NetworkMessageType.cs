@@ -99,4 +99,29 @@ public enum NetworkMessageType : byte
     /// Игрок хочет сыграть с ИИ
     /// </summary>
     AgentChoose = 18,
+
+    /// <summary>
+    /// Игрок хочет сменить сторону
+    /// </summary>
+    SwitchSidesRequest = 19,
+
+    /// <summary>
+    /// Голос на смену сторон
+    /// </summary>
+    SwitchSidesVote = 20,
+
+    /// <summary>
+    /// Смена сторон
+    /// </summary>
+    SwitchSides = 21,
+
+    /// <summary>
+    /// Запрос на смену ИИ агента
+    /// </summary>
+    AgentChangeRequest = 22,
+
+    /// <summary>
+    /// Запрос на убирание ИИ агента
+    /// </summary>
+    AgentRemoveRequest = 23,
 }

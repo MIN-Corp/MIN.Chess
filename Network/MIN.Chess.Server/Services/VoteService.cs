@@ -24,6 +24,11 @@ internal class VoteService
         { Player.White, false },
         { Player.Black, false },
     };
+    private readonly Dictionary<Player, bool> switchSideVote = new()
+    {
+        { Player.White, false },
+        { Player.Black, false },
+    };
 
     /// <summary>
     /// Событие по сдаче игрока
@@ -39,6 +44,11 @@ internal class VoteService
     /// Событие по наборе голосов на рестарт
     /// </summary>
     public Action? OnRestart;
+
+    /// <summary>
+    /// Событие по наборе голосов на смену сторон
+    /// </summary>
+    public Action? OnSwitchSide;
 
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="VoteService"/>
@@ -158,6 +168,54 @@ internal class VoteService
         }
 
         await messageService.BroadcastAsync(new RestartVoteMessage()
+        {
+            CurrentVotes = votes
+        });
+    }
+
+    /// <summary>
+    /// Обработать смену сторон
+    /// </summary>
+    public async Task HandleSwitchSide(INetworkMessage message)
+    {
+        var senderId = Guid.Parse(message.SenderId);
+        var role = roomService.ResolveRole(senderId);
+
+        logger.Log($"Restart received from {role}");
+
+        if (role == Player.None)
+        {
+            await messageService.SendErrorAsync(senderId, "У вас нету права на это");
+            return;
+        }
+
+        if (switchSideVote[role])
+        {
+            return;
+        }
+
+        if (!roomService.IsBothPlayersJoined())
+        {
+            return;
+        }
+
+        if (roomService.GetPlayers()[role.Opponent()]?.IsAi == true)
+        {
+            OnSwitchSide?.Invoke();
+            return;
+        }
+
+        var votes = 1;
+        switchSideVote[role] = true;
+        if (switchSideVote[Player.White] && switchSideVote[Player.Black])
+        {
+            OnSwitchSide?.Invoke();
+            votes = 0;
+            switchSideVote[Player.White] = false;
+            switchSideVote[Player.Black] = false;
+        }
+
+        await messageService.BroadcastAsync(new SwitchSidesVoteMessage()
         {
             CurrentVotes = votes
         });

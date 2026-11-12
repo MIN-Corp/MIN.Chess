@@ -1,5 +1,6 @@
 ﻿using MIN.Chess.Client.Forms.HelperForms;
 using MIN.Chess.Logic.Enums;
+using MIN.Chess.Logic.Extensions;
 using MIN.Chess.Logic.Models;
 using MIN.Chess.Logic.Models.Coordination;
 using MIN.Chess.Logic.Models.Moves;
@@ -211,6 +212,30 @@ public partial class MainForm
                 {
                     UpdateVoteAndPlayersForMenu(wasAboveZero);
                 }, this);
+                break;
+
+            case SwitchSidesVoteMessage switchSidesVoteMessage:
+                switchSideQuote.Visible = switchSidesVoteMessage.CurrentVotes > 0;
+                break;
+
+            case SwitchSidesMessage _:
+                premoves.Clear();
+                ClearDrag();
+                ClearSelection();
+
+                (players[Player.White], players[Player.Black]) = (players[Player.Black], players[Player.White]);
+                role = role!.Value.Opponent();
+
+                mainPanel.BackgroundImage = role == Player.Black
+                    ? Properties.Resources.BoardReversed
+                    : Properties.Resources.Board;
+
+                UpdateTurnColors();
+                UpdatePlayersInfo();
+                CalculateCellRectangles();
+
+                moveCache.Clear();
+                mainPanel.Invalidate();
                 break;
 
             case DrawVoteMessage drawVoteMessage:

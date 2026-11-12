@@ -1,4 +1,5 @@
-﻿using MIN.Chess.Agents.Services;
+﻿using System.Runtime.InteropServices.ComTypes;
+using MIN.Chess.Agents.Services;
 using MIN.Chess.Messages;
 using MIN.Chess.Messages.Contracts.Models;
 using MIN.Chess.Messages.Messages;
@@ -119,6 +120,10 @@ internal class GameServerService
 
             case ChangeRoleRequestMessage _:
                 await roomService.HandleChangeRole(message);
+                break;
+
+            case SwitchSidesRequestMessage _:
+                await voteService.HandleSwitchSide(message);
                 break;
 
             case PlayerLoadedMessage _:

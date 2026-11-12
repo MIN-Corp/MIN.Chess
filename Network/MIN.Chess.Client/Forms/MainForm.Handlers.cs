@@ -33,9 +33,19 @@ public partial class MainForm
         await network.SendRestartAsync();
     }
 
+    private async void switchSidesQuote_Click(object sender, EventArgs e)
+    {
+        await network.SendSwitchSidesAsync();
+    }
+
     private async void changeRoleButton_Click(object sender, EventArgs e)
     {
         await network.SendChangeRoleAsync();
+    }
+
+    private async void switchSideButton_Click(object sender, EventArgs e)
+    {
+        await network.SendSwitchSidesAsync();
     }
 
     private async void resignButton_Click(object sender, EventArgs e)
