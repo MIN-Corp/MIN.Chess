@@ -1,4 +1,6 @@
-﻿using MIN.Chess.Client.Forms.HelperForms;
+﻿using MIN.Chess.Client.Contracts.Enums;
+using MIN.Chess.Client.Forms.HelperForms;
+using MIN.Chess.Logic.Extensions;
 
 namespace MIN.Chess.Client.Forms;
 
@@ -43,7 +45,7 @@ public partial class MainForm
         await network.SendChangeRoleAsync();
     }
 
-    private async void switchSideButton_Click(object sender, EventArgs e)
+    private async void switchSidesButton_Click(object sender, EventArgs e)
     {
         await network.SendSwitchSidesAsync();
     }
@@ -66,12 +68,39 @@ public partial class MainForm
         await network.SendGameSettingsAsync(timerMinutes[timerIndex], bonusSeconds[bonusIndex]);
     }
 
-    private void buttonChooseAi_Click(object sender, EventArgs e)
+    private async void buttonChooseAi_Click(object sender, EventArgs e)
     {
-        var chose = new AgentChoosingMenu();
-        chose.OnOptionSelected += async void (type) =>
+        if (playerAiState == PlayerAiState.BothAi)
         {
-            await network.SendAgentChooseAsync(type);
+            await network.SendStartGameAsync();
+            return;
+        }
+
+        var chose = new AgentChoosingMenu(players[role!.Value.Opponent()]?.AgentType);
+        chose.OnOptionSelected += async void (type, asSelf) =>
+        {
+            if (type == null)
+            {
+                await network.SendAgentRemoveAsync();
+                return;
+            }
+
+            var opponent = players[role!.Value.Opponent()];
+
+            if (asSelf)
+            {
+                await network.SendAgentVsAgentAsync(type.Value, opponent!.AgentType!.Value);
+                return;
+            }
+
+            if (playerAiState == PlayerAiState.Alone)
+            {
+                await network.SendAgentChooseAsync(type.Value);
+            }
+            else if (playerAiState == PlayerAiState.WithAi)
+            {
+                await network.SendAgentChangeAsync(type.Value);
+            }
         };
         chose.ShowDialog();
     }

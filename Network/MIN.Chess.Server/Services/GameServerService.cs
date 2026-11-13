@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices.ComTypes;
-using MIN.Chess.Agents.Services;
+﻿using MIN.Chess.Agents.Services;
 using MIN.Chess.Messages;
 using MIN.Chess.Messages.Contracts.Models;
 using MIN.Chess.Messages.Messages;
@@ -21,7 +20,7 @@ internal class GameServerService
     private readonly GameService gameService;
     private readonly RoomService roomService;
     private readonly TimerService timerService;
-    private readonly AgentService  agentService;
+    private readonly AgentService agentService;
     private readonly CancellationTokenSource appCts = new();
     private const int ConnectionTimeoutMs = 5_000;
 
@@ -132,6 +131,22 @@ internal class GameServerService
 
             case AgentChooseMessage agentChooseMessage:
                 await agentService.HandleAgentChoose(message.SenderId, agentChooseMessage.AgentType);
+                break;
+
+            case AgentChangeRequestMessage agentChangeRequestMessage:
+                await agentService.HandleAgentChange(message.SenderId, agentChangeRequestMessage.AgentType);
+                break;
+
+            case AgentRemoveRequestMessage _:
+                await agentService.HandleAgentRemove(message.SenderId);
+                break;
+
+            case AgentVsAgentRequestMessage agentVsAgentRequestMessage:
+                await agentService.HandleAgentVsAgent(message.SenderId, agentVsAgentRequestMessage.SelfAgentType, agentVsAgentRequestMessage.OpponentAgentType);
+                break;
+
+            case StartGameRequestMessage _:
+                await gameService.HandleStartGame(message.SenderId);
                 break;
 
             case GameSettingsMessage gameSettingsMessage:

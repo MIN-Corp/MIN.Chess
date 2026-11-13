@@ -59,6 +59,11 @@ public class SmartAgent : IChessAgent
 
     async Task<Move> IChessAgent.GetMove(GameState state)
     {
+        if (state.MoveHistory.Count <= 2)
+        {
+            return GetRandomMove(state);
+        }
+
         var possibleMoves = state.AllLegalMovesFor(state.CurrentPlayer).Count();
         var appropriateDepth = (int)(12 / Math.Sqrt(possibleMoves + 30)) + 3;
 
@@ -105,7 +110,7 @@ public class SmartAgent : IChessAgent
             return [new MinMaxMove(currentScore * minOrMax, state)];
         }
 
-        var moves = selectedMoves ?? state.AllLegalMovesFor(state.CurrentPlayer).ToArray();
+        var moves = state.AllLegalMovesFor(state.CurrentPlayer).ToArray();
 
         var childDepth = depth - 1;
         var childMinOrMax = -minOrMax;

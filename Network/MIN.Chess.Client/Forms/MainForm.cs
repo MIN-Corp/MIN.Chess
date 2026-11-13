@@ -34,7 +34,7 @@ public partial class MainForm : Form
         drawButton.BackColor = Color.Black;
         pauseButton.BackColor = Color.Black;
         updateStateButton.BackColor = Color.Black;
-        switchSideButton.BackColor = Color.Black;
+        switchSidesButton.BackColor = Color.Black;
         var buttonsToolTip = new ToolTip
         {
             InitialDelay = 1000,

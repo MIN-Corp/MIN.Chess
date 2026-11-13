@@ -332,7 +332,10 @@ public class Board
         return wBishopPos.SquareColor() == bBishopPos.SquareColor();
     }
 
-    private Position FindPiece(Player player, PieceType type)
+    /// <summary>
+    /// Найти фигуру у игрока
+    /// </summary>
+    public Position FindPiece(Player player, PieceType type)
         => PiecePositionsFor(player).First(x => this[x]?.Type == type);
 
     private bool IsUnmobedKingAndRook(Position kingPos, Position rookPos)

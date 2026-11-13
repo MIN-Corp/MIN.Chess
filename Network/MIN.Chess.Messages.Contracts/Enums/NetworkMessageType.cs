@@ -124,4 +124,14 @@ public enum NetworkMessageType : byte
     /// Запрос на убирание ИИ агента
     /// </summary>
     AgentRemoveRequest = 23,
+
+    /// <summary>
+    /// Запрос на поставление на своё место ИИ агента
+    /// </summary>
+    AgentVsAgentRequest = 24,
+
+    /// <summary>
+    /// Просьюа начать игру
+    /// </summary>
+    StartGameRequest = 25
 }

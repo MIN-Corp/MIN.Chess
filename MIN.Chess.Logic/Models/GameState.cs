@@ -154,6 +154,7 @@ public class GameState
     public void ClearCache()
     {
         cachedLegalMoves = null;
+        MoveHistory.Clear();
     }
 
     /// <summary>

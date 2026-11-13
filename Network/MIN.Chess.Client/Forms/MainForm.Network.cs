@@ -14,7 +14,11 @@ namespace MIN.Chess.Client.Forms;
 
 public partial class MainForm
 {
-    private Dictionary<Player, ChessPlayer?> players = [];
+    private Dictionary<Player, ChessPlayer?> players = new()
+    {
+        { Player.White, null },
+        { Player.Black, null },
+    };
     private GameState? gameState;
     private Player? role;
     private Participant? participant;
@@ -243,14 +247,14 @@ public partial class MainForm
                 break;
 
             case PlayerConnectedMessage playerConnectedMessage:
-                if (playerConnectedMessage.Role != Player.None)
+                if (playerConnectedMessage.Player.Role != Player.None)
                 {
-                    players[playerConnectedMessage.Role] = new ChessPlayer(playerConnectedMessage.Participant);
+                    players[playerConnectedMessage.Player.Role] = playerConnectedMessage.Player;
                     changeRoleButton.Visible = CountPlayers() == 1 && role!.Value == Player.None;
 
-                    if (participant?.Id == playerConnectedMessage.Participant.Id && role!.Value == Player.None)
+                    if (participant?.Id == playerConnectedMessage.Player.Id && role!.Value == Player.None)
                     {
-                        role = playerConnectedMessage.Role;
+                        role = playerConnectedMessage.Player.Role;
                         UpdateTurnColors();
                         CalculateCellRectangles();
                         moveCache.Clear();
@@ -268,7 +272,12 @@ public partial class MainForm
             case PlayerDisconnectedMessage playerDisconnectedMessage:
                 if (playerDisconnectedMessage.Role != Player.None)
                 {
-                    players.Remove(playerDisconnectedMessage.Role);
+                    if (role!.Value == playerDisconnectedMessage.Role)
+                    {
+                        role = Player.None;
+                    }
+
+                    players[playerDisconnectedMessage.Role] = null;
                     gameState!.CurrentPlayer = Player.None;
 
                     if (role!.Value == Player.None)

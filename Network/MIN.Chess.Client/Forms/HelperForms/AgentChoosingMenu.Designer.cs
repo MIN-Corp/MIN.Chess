@@ -28,97 +28,150 @@
         /// </summary>
         private void InitializeComponent()
         {
-            tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
+            tableLayoutPanel = new TableLayoutPanel();
+            buttonRemoveCurrent = new MIN.Chess.Client.Components.Buttons.InvertedButton();
             commonButton1 = new MIN.Chess.Client.Components.Buttons.CommonButton();
             cancelButton = new MIN.Chess.Client.Components.Buttons.InvertedButton();
             randomAgentButton = new MIN.Chess.Client.Components.Buttons.CommonButton();
+            primaryLabel1 = new MIN.Chess.Client.Components.Labels.PrimaryLabel();
+            checkBoxAsSelf = new CheckBox();
             tableLayoutPanel.SuspendLayout();
             SuspendLayout();
-            //
+            // 
             // tableLayoutPanel
-            //
-            tableLayoutPanel.ColumnCount = 2;
-            tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            tableLayoutPanel.Controls.Add(commonButton1, 0, 0);
-            tableLayoutPanel.Controls.Add(cancelButton, 0, 1);
+            // 
+            tableLayoutPanel.ColumnCount = 4;
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25.0006237F));
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25.0006275F));
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25.0006275F));
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 24.9981289F));
+            tableLayoutPanel.Controls.Add(buttonRemoveCurrent, 0, 1);
             tableLayoutPanel.Controls.Add(randomAgentButton, 0, 0);
-            tableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            tableLayoutPanel.Location = new System.Drawing.Point(0, 0);
-            tableLayoutPanel.Margin = new System.Windows.Forms.Padding(0);
+            tableLayoutPanel.Controls.Add(cancelButton, 3, 1);
+            tableLayoutPanel.Controls.Add(commonButton1, 2, 0);
+            tableLayoutPanel.Controls.Add(primaryLabel1, 1, 1);
+            tableLayoutPanel.Controls.Add(checkBoxAsSelf, 2, 1);
+            tableLayoutPanel.Dock = DockStyle.Fill;
+            tableLayoutPanel.Location = new Point(0, 0);
+            tableLayoutPanel.Margin = new Padding(0);
             tableLayoutPanel.Name = "tableLayoutPanel";
             tableLayoutPanel.RowCount = 2;
-            tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.333332F));
-            tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 48F));
-            tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            tableLayoutPanel.Size = new System.Drawing.Size(502, 306);
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
+            tableLayoutPanel.Size = new Size(585, 346);
             tableLayoutPanel.TabIndex = 0;
-            //
+            // 
+            // buttonRemoveCurrent
+            // 
+            buttonRemoveCurrent.Anchor = AnchorStyles.Top;
+            buttonRemoveCurrent.BackColor = Color.FromArgb(248, 249, 255);
+            buttonRemoveCurrent.DialogResult = DialogResult.Cancel;
+            buttonRemoveCurrent.FlatAppearance.BorderColor = Color.FromArgb(167, 157, 255);
+            buttonRemoveCurrent.FlatAppearance.BorderSize = 2;
+            buttonRemoveCurrent.FlatStyle = FlatStyle.Flat;
+            buttonRemoveCurrent.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
+            buttonRemoveCurrent.ForeColor = Color.FromArgb(255, 128, 128);
+            buttonRemoveCurrent.Location = new Point(3, 301);
+            buttonRemoveCurrent.Name = "buttonRemoveCurrent";
+            buttonRemoveCurrent.Size = new Size(140, 42);
+            buttonRemoveCurrent.TabIndex = 5;
+            buttonRemoveCurrent.Text = "Убрать текущего";
+            buttonRemoveCurrent.UseVisualStyleBackColor = false;
+            buttonRemoveCurrent.Click += buttonRemoveCurrent_Click;
+            // 
             // commonButton1
-            //
-            commonButton1.BackColor = System.Drawing.Color.White;
-            commonButton1.BackgroundImage = global::MIN.Chess.Client.Properties.Resources.maguns;
-            commonButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            commonButton1.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)((byte)228)), ((int)((byte)230)), ((int)((byte)240)));
-            commonButton1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            commonButton1.Font = new System.Drawing.Font("Segoe UI", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)204));
-            commonButton1.ForeColor = System.Drawing.Color.White;
-            commonButton1.Location = new System.Drawing.Point(254, 3);
+            // 
+            commonButton1.BackColor = Color.White;
+            commonButton1.BackgroundImage = Properties.Resources.maguns;
+            commonButton1.BackgroundImageLayout = ImageLayout.Zoom;
+            tableLayoutPanel.SetColumnSpan(commonButton1, 2);
+            commonButton1.Dock = DockStyle.Fill;
+            commonButton1.FlatAppearance.BorderColor = Color.FromArgb(228, 230, 240);
+            commonButton1.FlatStyle = FlatStyle.Flat;
+            commonButton1.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 204);
+            commonButton1.ForeColor = Color.White;
+            commonButton1.Location = new Point(295, 3);
             commonButton1.Name = "commonButton1";
-            commonButton1.Size = new System.Drawing.Size(245, 252);
+            commonButton1.Size = new Size(287, 292);
             commonButton1.TabIndex = 4;
             commonButton1.Text = "Магнус Карлсен";
-            commonButton1.TextAlign = System.Drawing.ContentAlignment.TopLeft;
+            commonButton1.TextAlign = ContentAlignment.TopLeft;
             commonButton1.UseVisualStyleBackColor = false;
             commonButton1.Click += commonButton1_Click;
-            //
+            // 
             // cancelButton
-            //
-            cancelButton.Anchor = System.Windows.Forms.AnchorStyles.Top;
-            cancelButton.BackColor = System.Drawing.Color.FromArgb(((int)((byte)248)), ((int)((byte)249)), ((int)((byte)255)));
-            tableLayoutPanel.SetColumnSpan(cancelButton, 2);
-            cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            cancelButton.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)((byte)167)), ((int)((byte)157)), ((int)((byte)255)));
+            // 
+            cancelButton.Anchor = AnchorStyles.Top;
+            cancelButton.BackColor = Color.FromArgb(248, 249, 255);
+            cancelButton.DialogResult = DialogResult.Cancel;
+            cancelButton.FlatAppearance.BorderColor = Color.FromArgb(167, 157, 255);
             cancelButton.FlatAppearance.BorderSize = 2;
-            cancelButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            cancelButton.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
-            cancelButton.ForeColor = System.Drawing.Color.FromArgb(((int)((byte)167)), ((int)((byte)157)), ((int)((byte)255)));
-            cancelButton.Location = new System.Drawing.Point(128, 261);
+            cancelButton.FlatStyle = FlatStyle.Flat;
+            cancelButton.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
+            cancelButton.ForeColor = Color.FromArgb(167, 157, 255);
+            cancelButton.Location = new Point(441, 301);
             cancelButton.Name = "cancelButton";
-            cancelButton.Size = new System.Drawing.Size(245, 42);
+            cancelButton.Size = new Size(141, 42);
             cancelButton.TabIndex = 2;
             cancelButton.Text = "Отмена";
             cancelButton.UseVisualStyleBackColor = false;
-            //
+            // 
             // randomAgentButton
-            //
-            randomAgentButton.BackColor = System.Drawing.Color.White;
-            randomAgentButton.BackgroundImage = global::MIN.Chess.Client.Properties.Resources.random;
-            randomAgentButton.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            randomAgentButton.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)((byte)228)), ((int)((byte)230)), ((int)((byte)240)));
-            randomAgentButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            randomAgentButton.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)204));
-            randomAgentButton.ForeColor = System.Drawing.Color.Black;
-            randomAgentButton.Location = new System.Drawing.Point(3, 3);
+            // 
+            randomAgentButton.BackColor = Color.White;
+            randomAgentButton.BackgroundImage = Properties.Resources.random;
+            randomAgentButton.BackgroundImageLayout = ImageLayout.Zoom;
+            tableLayoutPanel.SetColumnSpan(randomAgentButton, 2);
+            randomAgentButton.Dock = DockStyle.Fill;
+            randomAgentButton.FlatAppearance.BorderColor = Color.FromArgb(228, 230, 240);
+            randomAgentButton.FlatStyle = FlatStyle.Flat;
+            randomAgentButton.Font = new Font("Segoe UI", 15.75F, FontStyle.Bold, GraphicsUnit.Point, 204);
+            randomAgentButton.ForeColor = Color.Black;
+            randomAgentButton.Location = new Point(3, 3);
             randomAgentButton.Name = "randomAgentButton";
-            randomAgentButton.Size = new System.Drawing.Size(245, 252);
+            randomAgentButton.Size = new Size(286, 292);
             randomAgentButton.TabIndex = 3;
             randomAgentButton.Text = "Рандом";
-            randomAgentButton.TextAlign = System.Drawing.ContentAlignment.BottomCenter;
+            randomAgentButton.TextAlign = ContentAlignment.BottomCenter;
             randomAgentButton.UseVisualStyleBackColor = false;
             randomAgentButton.Click += randomAgentButton_Click;
-            //
+            // 
+            // primaryLabel1
+            // 
+            primaryLabel1.Anchor = AnchorStyles.Right;
+            primaryLabel1.AutoSize = true;
+            primaryLabel1.Font = new Font("Segoe UI", 9.75F);
+            primaryLabel1.ForeColor = Color.FromArgb(45, 43, 58);
+            primaryLabel1.Location = new Point(152, 313);
+            primaryLabel1.Name = "primaryLabel1";
+            primaryLabel1.Size = new Size(137, 17);
+            primaryLabel1.TabIndex = 6;
+            primaryLabel1.Text = "выбрать вместо себя";
+            primaryLabel1.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // checkBoxAsSelf
+            // 
+            checkBoxAsSelf.Anchor = AnchorStyles.Left;
+            checkBoxAsSelf.AutoSize = true;
+            checkBoxAsSelf.Location = new Point(295, 315);
+            checkBoxAsSelf.Name = "checkBoxAsSelf";
+            checkBoxAsSelf.Size = new Size(15, 14);
+            checkBoxAsSelf.TabIndex = 7;
+            checkBoxAsSelf.UseVisualStyleBackColor = true;
+            // 
             // AgentChoosingMenu
-            //
-            AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            // 
+            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleMode = AutoScaleMode.Font;
             CancelButton = cancelButton;
-            ClientSize = new System.Drawing.Size(502, 306);
+            ClientSize = new Size(585, 346);
             Controls.Add(tableLayoutPanel);
-            FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            Name = "AgentChoosingMenu";
+            StartPosition = FormStartPosition.CenterScreen;
             Text = "Выбор агента";
             tableLayoutPanel.ResumeLayout(false);
+            tableLayoutPanel.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -130,5 +183,8 @@
 
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel;
         private MIN.Chess.Client.Components.Buttons.InvertedButton cancelButton;
+        private Components.Buttons.InvertedButton buttonRemoveCurrent;
+        private Components.Labels.PrimaryLabel primaryLabel1;
+        private CheckBox checkBoxAsSelf;
     }
 }

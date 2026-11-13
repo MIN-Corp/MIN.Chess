@@ -32,10 +32,38 @@ internal class AgentService
     public async Task HandleAgentChoose(string senderIdString, AgentType agentType)
     {
         var senderId = Guid.Parse(senderIdString);
+        var senderRole = roomService.ResolveRole(senderId);
 
-        if (roomService.IsBothPlayersJoined())
+        if (!(await HandleAgentChoosingAllowance(senderId, senderRole)))
         {
-            await messageService.SendErrorAsync(senderId, "С тобой уже играет другой игрок");
+            return;
+        }
+
+        var agent = agentFactory.GetAgent(agentType);
+        var agentRole = senderRole.Opponent();
+        var agentPlayer = new ChessPlayer(agent.DisplayName)
+        {
+            IsAi = true,
+            AgentType = agent.Type,
+            Role = agentRole
+        };
+
+        agents[agentRole] = agent;
+        agentPlayers[agentRole] = agentPlayer;
+
+        await roomService.HandleParticipantJoining(agentPlayer);
+    }
+
+    /// <summary>
+    /// Обработать смену агента
+    /// </summary>
+    public async Task HandleAgentChange(string senderIdString, AgentType agentType)
+    {
+        var senderId = Guid.Parse(senderIdString);
+        var senderRole = roomService.ResolveRole(senderId);
+
+        if (!(await HandleAgentChoosingAllowance(senderId, senderRole)))
+        {
             return;
         }
 
@@ -50,26 +78,77 @@ internal class AgentService
 
         agents[agentRole] = agent;
         agentPlayers[agentRole] = agentPlayer;
-
-        await roomService.HandleParticipantJoining(agentPlayer);
+        await roomService.ReplacePlayer(senderRole.Opponent(), agentPlayer);
     }
 
-    // TODO
-    // HandleAgentChange(message, type): sender must be a player; opponent seat must be AI → new ChessPlayer + swap agents/agentPlayers entries → roomService.ReplacePlayer(...). No restart, no OnPlayerLeft — game continues.
-    // HandleAgentRemove(message): same validation → clear agents/agentPlayers entry → roomService.RemovePlayer(...) → fires existing OnPlayerLeft → game restarts, seat opens for join/spectator-takeover.
-    // Also add sender-is-player validation to existing HandleAgentChoose (currently a spectator can trigger the Player.None seat bug).
+    /// <summary>
+    /// Обработать убирание агента
+    /// </summary>
+    public async Task HandleAgentRemove(string senderIdString)
+    {
+        var senderId = Guid.Parse(senderIdString);
+        var senderRole = roomService.ResolveRole(senderId);
+
+        if (!(await HandleAgentChoosingAllowance(senderId, senderRole)))
+        {
+            return;
+        }
+
+        agents.Remove(senderRole.Opponent());
+        agentPlayers.Remove(senderRole.Opponent());
+        await roomService.RemovePlayer(senderRole.Opponent());
+    }
+
+
+    /// <summary>
+    /// Обработать битву агентов
+    /// </summary>
+    public async Task HandleAgentVsAgent(string senderIdString, AgentType selfAgentType, AgentType opponentAgentType)
+    {
+        var senderId = Guid.Parse(senderIdString);
+        var senderRole = roomService.ResolveRole(senderId);
+
+        if (!(await HandleAgentChoosingAllowance(senderId, senderRole)))
+        {
+            return;
+        }
+
+        if (roomService.GetPlayers()[senderRole.Opponent()] == null)
+        {
+            await HandleAgentChoose(senderIdString, opponentAgentType);
+        }
+        else if (roomService.GetPlayers()[senderRole.Opponent()]?.IsAi == true)
+        {
+            await HandleAgentChange(senderIdString, opponentAgentType);
+        }
+
+        await roomService.RemovePlayer(senderRole);
+
+        var agent = agentFactory.GetAgent(selfAgentType);
+        var agentRole = senderRole;
+        var agentPlayer = new ChessPlayer(agent.DisplayName)
+        {
+            IsAi = true,
+            AgentType = agent.Type,
+            Role = agentRole
+        };
+
+        agents[agentRole] = agent;
+        agentPlayers[agentRole] = agentPlayer;
+        await roomService.HandleParticipantJoining(agentPlayer);
+    }
 
     /// <summary>
     /// Обработать ход агента
     /// </summary>
-    public async Task<Move?> HandleAgentMove(Guid senderId, GameState gameState)
+    public async Task<Move?> HandleAgentMove(GameState gameState)
     {
         if (agents.TryGetValue(gameState.CurrentPlayer, out var agent))
         {
             return await agent.GetMove(gameState);
         }
 
-        await messageService.SendErrorAsync(senderId, "Агент не нашёлся");
+        Console.WriteLine("Агент не нашёлся");
         return null;
     }
 
@@ -78,4 +157,22 @@ internal class AgentService
     /// </summary>
     public Guid GetAgentId(Player role)
         => agentPlayers.TryGetValue(role, out var agentPlayer) ? agentPlayer.Id : Guid.Empty;
+
+    private async Task<bool> HandleAgentChoosingAllowance(Guid senderId, Player senderRole)
+    {
+        if (senderRole == Player.None)
+        {
+            await messageService.SendErrorAsync(senderId, "Ты не игрок");
+            return false;
+        }
+
+        if (roomService.IsBothPlayersJoined()
+            && !roomService.GetPlayers()[senderRole.Opponent()]?.IsAi == true)
+        {
+            await messageService.SendErrorAsync(senderId, "С тобой уже играет другой игрок");
+            return false;
+        }
+
+        return true;
+    }
 }

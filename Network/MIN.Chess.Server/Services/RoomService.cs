@@ -1,7 +1,4 @@
-﻿using MIN.Chess.Agents.Contracts;
-using MIN.Chess.Agents.Enums;
-using MIN.Chess.Agents.Services;
-using MIN.Chess.Logic.Enums;
+﻿using MIN.Chess.Logic.Enums;
 using MIN.Chess.Messages.Contracts.Models;
 using MIN.Chess.Messages.Messages;
 using MIN.Chess.Server.Helpers;
@@ -190,10 +187,14 @@ internal class RoomService
 
             OnPlayerJoined?.Invoke(Player.White);
 
+            var white = new ChessPlayer(participant)
+            {
+                Role = Player.White
+            };
+
             await messageService.BroadcastAsync(new PlayerConnectedMessage()
             {
-                Role = Player.White,
-                Participant = participant,
+                Player = white,
             });
         }
         else if (players[Player.Black] == null)
@@ -203,10 +204,14 @@ internal class RoomService
 
             OnPlayerJoined?.Invoke(Player.Black);
 
+            var black = new ChessPlayer(participant)
+            {
+                Role = Player.Black
+            };
+
             await messageService.BroadcastAsync(new PlayerConnectedMessage()
             {
-                Role = Player.Black,
-                Participant = participant,
+                Player = black,
             });
         }
 
@@ -224,7 +229,7 @@ internal class RoomService
     public async Task ReplacePlayer(Player role, ChessPlayer replacement)
     {
         players[role] = replacement;
-        await messageService.BroadcastAsync(new PlayerConnectedMessage { Role = role, Participant = replacement });
+        await messageService.BroadcastAsync(new PlayerConnectedMessage { Player = replacement });
     }
 
     /// <summary>
@@ -264,10 +269,11 @@ internal class RoomService
 
             OnPlayerJoined?.Invoke(Player.None);
 
+            participant.Role = Player.None;
+
             await messageService.BroadcastExcludingAsync(new PlayerConnectedMessage()
             {
-                Role = Player.None,
-                Participant = participant,
+                Player = participant,
             }, participant.Id);
 
             if (pendingInits.Remove(participant.Id, out _))
@@ -285,10 +291,11 @@ internal class RoomService
 
             OnPlayerJoined?.Invoke(Player.White);
 
+            participant.Role = Player.White;
+
             await messageService.BroadcastExcludingAsync(new PlayerConnectedMessage()
             {
-                Role = Player.White,
-                Participant = participant,
+                Player = participant,
             }, participant.Id);
         }
         else if (players[Player.Black] == null)
@@ -298,10 +305,11 @@ internal class RoomService
 
             OnPlayerJoined?.Invoke(Player.Black);
 
+            participant.Role = Player.Black;
+
             await messageService.BroadcastExcludingAsync(new PlayerConnectedMessage()
             {
-                Role = Player.Black,
-                Participant = participant,
+                Player = participant,
             }, participant.Id);
         }
 

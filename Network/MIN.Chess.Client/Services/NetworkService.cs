@@ -104,6 +104,33 @@ internal class NetworkService
     });
 
     /// <summary>
+    /// Отправить желание сменить агента
+    /// </summary>
+    public Task SendAgentChangeAsync(AgentType type) => SendMessage(new AgentChangeRequestMessage()
+    {
+        AgentType = type
+    });
+
+    /// <summary>
+    /// Отправить желание убрать агента
+    /// </summary>
+    public Task SendAgentRemoveAsync() => SendMessage(new AgentRemoveRequestMessage());
+
+    /// <summary>
+    /// Отправить желание узреть битву агентов
+    /// </summary>
+    public Task SendAgentVsAgentAsync(AgentType selfType, AgentType opponentType) => SendMessage(new AgentVsAgentRequestMessage()
+    {
+        SelfAgentType = selfType,
+        OpponentAgentType = opponentType
+    });
+
+    /// <summary>
+    /// Отправить желание начать битву агентов
+    /// </summary>
+    public Task SendStartGameAsync() => SendMessage(new StartGameRequestMessage());
+
+    /// <summary>
     /// Отправить настройки
     /// </summary>
     public Task SendGameSettingsAsync(int? timerMin, int bonusSec) => SendMessage(
