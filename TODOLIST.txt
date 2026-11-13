@@ -1,0 +1,160 @@
+## Feature A: Switch Sides (completing your voting work)
+
+### Server
+
+**`GameService.cs`** — subscribe next to the other vote events (after line 89):
+```csharp
+voteService.OnSwitchSide += async void () =>
+{
+    roomService.SwitchSides();
+    await messageService.BroadcastAsync(new SwitchSidesMessage());
+    Restart();
+    await ManageStartGameStateOutOfPlayerPresence();
+};
+```
+Role flip reaches clients *before* the fresh `StateUpdateMessage`.
+
+**`RoomService.cs`** — new method:
+```csharp
+/// <summary>
+/// Поменять местами игроков (смена сторон)
+/// </summary>
+public void SwitchSides() =>
+    (players[Player.White], players[Player.Black]) = (players[Player.Black], players[Player.White]);
+```
+
+### Client
+
+**`MainForm.Network.cs`** — the case you asked for (after `DrawVoteMessage` case):
+```csharp
+case SwitchSidesVoteMessage switchSidesVoteMessage:
+    switchSideQuote.Visible = switchSidesVoteMessage.CurrentVotes > 0;
+    break;
+
+case SwitchSidesMessage switchSidesMessage:
+    premoves.Clear();
+    ClearDrag();
+    ClearSelection();
+
+    (players[Player.White], players[Player.Black]) = (players[Player.Black], players[Player.White]);
+    role = role!.Value.Opponent();
+
+    mainPanel.BackgroundImage = role == Player.Black
+        ? Properties.Resources.BoardReversed
+        : Properties.Resources.Board;
+
+    UpdateTurnColors();
+    UpdatePlayersInfo();
+    CalculateCellRectangles();
+
+    moveCache.Clear();
+    mainPanel.Invalidate();
+    break;
+```
+(Spectators: `None.Opponent() == None` — they just re-render the swapped list.)
+
+**`MainForm.Designer.cs`** — fix wiring:
+- Line 435: `restartQuote.Click += switchSidesQuote_Click` → `restartQuote.Click += restartQuote_Click`
+- Add `switchSideQuote.Click += switchSidesQuote_Click`
+
+### Message
+`NetworkMessageType.SwitchSides = 21` + empty record `SwitchSidesMessage` (auto-registers via anchor).
+
+---
+
+## Feature B: Change / Remove in-game agent (opposing player only, game continues)
+
+**Messages** (enum 22, 23): `AgentChangeRequestMessage { AgentType }`, `AgentRemoveRequestMessage` (empty).
+
+**`AgentService.cs`** — two handlers:
+- `HandleAgentChange(message, type)`: sender must be a player; opponent seat must be AI → new `ChessPlayer` + swap `agents`/`agentPlayers` entries → `roomService.ReplacePlayer(...)`. No restart, no `OnPlayerLeft` — game continues.
+- `HandleAgentRemove(message)`: same validation → clear `agents`/`agentPlayers` entry → `roomService.RemovePlayer(...)` → fires existing `OnPlayerLeft` → game restarts, seat opens for join/spectator-takeover.
+- Also add sender-is-player validation to existing `HandleAgentChoose` (currently a spectator can trigger the `Player.None` seat bug).
+
+**`RoomService.cs`** — two helpers:
+```csharp
+public async Task ReplacePlayer(Player role, ChessPlayer replacement)
+{
+    players[role] = replacement;
+    await messageService.BroadcastAsync(new PlayerConnectedMessage { Role = role, Participant = replacement });
+}
+
+public async Task RemovePlayer(Player role)
+{
+    players[role] = null;
+    OnPlayerLeft?.Invoke(role);
+    await messageService.BroadcastAsync(new PlayerDisconnectedMessage { Role = role });
+}
+```
+
+---
+
+## Feature C: AI vs AI (one action) + Start/Restart button
+
+**Message** (enum 24, 25): `AgentVsAgentRequestMessage { SelfAgentType, OpponentAgentType }`, `StartGameRequestMessage` (empty).
+
+**`AgentService.HandleAgentVsAgent`**: sender must be a player; opponent must be empty or AI (error if human) → `RemovePlayer(senderRole)` (human leaves, becomes spectator) → self agent joins via `HandleParticipantJoining` → opponent agent joins or replaces → fresh board broadcast via existing `OnPlayerJoined` path.
+
+**`GameService`** — extract the AI chain from `HandleMove`'s tail loop into:
+```csharp
+private async Task PlayAiMovesFromCurrentPosition()  // apply move → timer → broadcast MoveUpdate → check game over → loop
+```
+`HandleMove` calls it when opponent is AI (removes the duplicated loop). New public handler:
+```csharp
+public async Task HandleStartGame(INetworkMessage message)
+{
+    var senderId = Guid.Parse(message.SenderId);
+    var seats = roomService.GetPlayers();
+
+    if (seats[Player.White]?.IsAi != true || seats[Player.Black]?.IsAi != true)
+    {
+        await messageService.SendErrorAsync(senderId, "Для запуска нужны два агента");
+        return;
+    }
+
+    if (!GameState.IsGameOver() && lastMove != null)
+    {
+        return; // игра уже идёт
+    }
+
+    if (GameState.IsGameOver())
+    {
+        Restart();
+        await ManageStartGameStateOutOfPlayerPresence();
+    }
+
+    await PlayAiMovesFromCurrentPosition();
+}
+```
+Any human (spectator included) may press start/restart — this covers AI-vs-AI restart since spectators can't vote.
+
+**Client:**
+- `NetworkService`: `SendAgentChangeAsync`, `SendAgentRemoveAsync`, `SendAgentVsAgentAsync`, `SendStartGameAsync`
+- `MainForm.Handlers.cs` / `MainForm.cs` — `buttonChooseAi` becomes context-sensitive (text + behavior updated via `UpdateAiButton()` called from `UpdatePlayersInfo()`):
+  | Situation | Button | Action |
+  |---|---|---|
+  | Both seats AI | "Начать игру" | `SendStartGameAsync()` (server restarts if game over) |
+  | You're a player, opponent seat empty | "Сыграть с ИИ" | pick menu (+ "ИИ против ИИ" third option) |
+  | You're a player, opponent is AI | manage menu | change to Random / Smart / remove |
+  | You're a player, opponent is human | hidden | — |
+  | Spectator, not both-AI | hidden | — |
+- `AgentChoosingMenu`: mode support — *pick* mode (Random/Smart + "ИИ против ИИ" which does a two-step pick: self agent then opponent agent) and *manage* mode (change Random / change Smart / "Убрать агента")
+- `MainForm.Network.cs` `PlayerDisconnectedMessage` case: add self-removal detection — if the disconnected role equals my `role`, set `role = Player.None` (needed so the human who replaced themselves with an agent becomes a spectator client-side)
+
+## Dispatch additions (`GameServerService.cs`)
+```csharp
+case AgentChangeRequestMessage m:  await agentService.HandleAgentChange(m, m.AgentType); break;
+case AgentRemoveRequestMessage m:  await agentService.HandleAgentRemove(m); break;
+case AgentVsAgentRequestMessage m: await agentService.HandleAgentVsAgent(m, m.SelfAgentType, m.OpponentAgentType); break;
+case StartGameRequestMessage m:    await gameService.HandleStartGame(m); break;
+```
+
+## Notes / known edges
+- Timer settings stay locked in both-AI mode (settings require White = an AI seat now) — existing rule, unchanged
+- Agent change mid-game while the agent is "thinking": worst case old agent finishes its move — acceptable, agents compute synchronously in the move loop
+- Switch sides in a both-AI game returns it to "waiting for start button" state — consistent
+- Build + run `dotnet build` on the solution to verify after implementation
+
+---
+
+Shall I proceed with implementing this (I'll exit plan mode and write the code)?

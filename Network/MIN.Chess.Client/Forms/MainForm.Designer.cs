@@ -25,8 +25,8 @@ namespace MIN.Chess.Client.Forms
         #region Windows Form Designer generated code
 
         /// <summary>
-        ///  Required method for Designer support - do not modify
-        ///  the contents of this method with the code editor.
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent()
         {
@@ -40,8 +40,8 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanelButtons = new TableLayoutPanel();
             updateStateButton = new Button();
             drawButton = new Button();
-            pauseButton = new Button();
             resignButton = new Button();
+            pauseButton = new Button();
             tableLayoutPanelOpponent = new TableLayoutPanel();
             opponentNameWithTimer = new Panel();
             opponentTimerLabel = new MIN.Chess.Client.Components.Labels.Heading3Label();
@@ -54,9 +54,12 @@ namespace MIN.Chess.Client.Forms
             selfCapturesPanel = new Panel();
             changeRoleButton = new MIN.Chess.Client.Components.Buttons.InvertedButton();
             flowLayoutPanelVotes = new FlowLayoutPanel();
+            switchSideQuote = new MIN.Chess.Client.Components.Labels.Heading3Label();
             restartQuote = new MIN.Chess.Client.Components.Labels.Heading3Label();
             drawQuote = new MIN.Chess.Client.Components.Labels.Heading3Label();
             flowLayoutPanelSettings = new FlowLayoutPanel();
+            panelAi = new Panel();
+            buttonChooseAi = new MIN.Chess.Client.Components.Buttons.CommonButton();
             panelTimer = new Panel();
             timerTrackBar = new TrackBar();
             timerValueLabel = new MIN.Chess.Client.Components.Labels.Heading3Label();
@@ -69,6 +72,8 @@ namespace MIN.Chess.Client.Forms
             buttonBonusPrevious = new Button();
             buttonBonusNext = new Button();
             timerBonusLabel = new MIN.Chess.Client.Components.Labels.Heading3Label();
+            panel2 = new Panel();
+            switchSidesButton = new MIN.Chess.Client.Components.Buttons.CommonButton();
             buttonSaveSettings = new MIN.Chess.Client.Components.Buttons.InvertedButton();
             tableLayoutPanel.SuspendLayout();
             tableLayoutPanelSpectating.SuspendLayout();
@@ -80,10 +85,12 @@ namespace MIN.Chess.Client.Forms
             selfNameAndTimer.SuspendLayout();
             flowLayoutPanelVotes.SuspendLayout();
             flowLayoutPanelSettings.SuspendLayout();
+            panelAi.SuspendLayout();
             panelTimer.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)timerTrackBar).BeginInit();
             panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)bonusTrackBar).BeginInit();
+            panel2.SuspendLayout();
             SuspendLayout();
             // 
             // tableLayoutPanel
@@ -92,6 +99,7 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 180F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 180F));
+            tableLayoutPanel.Controls.Add(panelAi, 2, 2);
             tableLayoutPanel.Controls.Add(settingsTitle, 0, 1);
             tableLayoutPanel.Controls.Add(mainPanel, 1, 0);
             tableLayoutPanel.Controls.Add(tableLayoutPanelSpectating, 2, 0);
@@ -110,7 +118,7 @@ namespace MIN.Chess.Client.Forms
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 64F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));
             tableLayoutPanel.Size = new Size(984, 579);
             tableLayoutPanel.TabIndex = 0;
@@ -177,15 +185,17 @@ namespace MIN.Chess.Client.Forms
             // 
             // tableLayoutPanelButtons
             // 
-            tableLayoutPanelButtons.ColumnCount = 4;
+            tableLayoutPanelButtons.ColumnCount = 5;
+            tableLayoutPanelButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42F));
             tableLayoutPanelButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42F));
             tableLayoutPanelButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42F));
             tableLayoutPanelButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tableLayoutPanelButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42F));
             tableLayoutPanelButtons.Controls.Add(updateStateButton, 2, 0);
             tableLayoutPanelButtons.Controls.Add(drawButton, 1, 0);
-            tableLayoutPanelButtons.Controls.Add(pauseButton, 3, 0);
             tableLayoutPanelButtons.Controls.Add(resignButton, 0, 0);
+            tableLayoutPanelButtons.Controls.Add(pauseButton, 4, 0);
+            tableLayoutPanelButtons.Dock = DockStyle.Fill;
             tableLayoutPanelButtons.Location = new Point(807, 534);
             tableLayoutPanelButtons.Name = "tableLayoutPanelButtons";
             tableLayoutPanelButtons.RowCount = 1;
@@ -218,19 +228,6 @@ namespace MIN.Chess.Client.Forms
             drawButton.UseVisualStyleBackColor = true;
             drawButton.Click += drawButton_Click;
             // 
-            // pauseButton
-            // 
-            pauseButton.BackgroundImage = Properties.Resources.pause;
-            pauseButton.BackgroundImageLayout = ImageLayout.Zoom;
-            pauseButton.Dock = DockStyle.Fill;
-            pauseButton.ForeColor = Color.Black;
-            pauseButton.Location = new Point(135, 3);
-            pauseButton.Name = "pauseButton";
-            pauseButton.Size = new Size(36, 36);
-            pauseButton.TabIndex = 10;
-            pauseButton.UseVisualStyleBackColor = true;
-            pauseButton.Click += pauseButton_Click;
-            // 
             // resignButton
             // 
             resignButton.BackgroundImage = Properties.Resources.resign;
@@ -243,6 +240,18 @@ namespace MIN.Chess.Client.Forms
             resignButton.TabIndex = 9;
             resignButton.UseVisualStyleBackColor = true;
             resignButton.Click += resignButton_Click;
+            // 
+            // pauseButton
+            // 
+            pauseButton.BackgroundImage = Properties.Resources.pause;
+            pauseButton.BackgroundImageLayout = ImageLayout.Zoom;
+            pauseButton.ForeColor = Color.Black;
+            pauseButton.Location = new Point(135, 3);
+            pauseButton.Name = "pauseButton";
+            pauseButton.Size = new Size(36, 36);
+            pauseButton.TabIndex = 10;
+            pauseButton.UseVisualStyleBackColor = true;
+            pauseButton.Click += pauseButton_Click;
             // 
             // tableLayoutPanelOpponent
             // 
@@ -376,23 +385,39 @@ namespace MIN.Chess.Client.Forms
             // 
             // flowLayoutPanelVotes
             // 
+            flowLayoutPanelVotes.Controls.Add(switchSideQuote);
             flowLayoutPanelVotes.Controls.Add(restartQuote);
             flowLayoutPanelVotes.Controls.Add(drawQuote);
             flowLayoutPanelVotes.Dock = DockStyle.Fill;
             flowLayoutPanelVotes.FlowDirection = FlowDirection.BottomUp;
-            flowLayoutPanelVotes.Location = new Point(804, 483);
+            flowLayoutPanelVotes.Location = new Point(804, 467);
             flowLayoutPanelVotes.Margin = new Padding(0);
             flowLayoutPanelVotes.Name = "flowLayoutPanelVotes";
-            flowLayoutPanelVotes.Size = new Size(180, 48);
+            flowLayoutPanelVotes.Size = new Size(180, 64);
             flowLayoutPanelVotes.TabIndex = 12;
+            // 
+            // switchSideQuote
+            // 
+            switchSideQuote.Anchor = AnchorStyles.Bottom;
+            switchSideQuote.AutoSize = true;
+            switchSideQuote.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 204);
+            switchSideQuote.ForeColor = Color.White;
+            switchSideQuote.Location = new Point(3, 47);
+            switchSideQuote.Name = "switchSideQuote";
+            switchSideQuote.Size = new Size(161, 17);
+            switchSideQuote.TabIndex = 11;
+            switchSideQuote.Text = "Сменить стороны? (1/2)";
+            switchSideQuote.TextAlign = ContentAlignment.MiddleLeft;
+            switchSideQuote.Visible = false;
+            switchSideQuote.Click += switchSidesQuote_Click;
             // 
             // restartQuote
             // 
             restartQuote.Anchor = AnchorStyles.Bottom;
             restartQuote.AutoSize = true;
-            restartQuote.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            restartQuote.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 204);
             restartQuote.ForeColor = Color.White;
-            restartQuote.Location = new Point(3, 27);
+            restartQuote.Location = new Point(24, 26);
             restartQuote.Name = "restartQuote";
             restartQuote.Size = new Size(118, 21);
             restartQuote.TabIndex = 9;
@@ -405,9 +430,9 @@ namespace MIN.Chess.Client.Forms
             // 
             drawQuote.Anchor = AnchorStyles.Bottom;
             drawQuote.AutoSize = true;
-            drawQuote.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            drawQuote.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 204);
             drawQuote.ForeColor = Color.White;
-            drawQuote.Location = new Point(8, 6);
+            drawQuote.Location = new Point(29, 5);
             drawQuote.Name = "drawQuote";
             drawQuote.Size = new Size(108, 21);
             drawQuote.TabIndex = 10;
@@ -419,11 +444,36 @@ namespace MIN.Chess.Client.Forms
             // 
             flowLayoutPanelSettings.Controls.Add(panelTimer);
             flowLayoutPanelSettings.Controls.Add(panel1);
+            flowLayoutPanelSettings.Controls.Add(panel2);
             flowLayoutPanelSettings.Dock = DockStyle.Fill;
             flowLayoutPanelSettings.Location = new Point(3, 99);
             flowLayoutPanelSettings.Name = "flowLayoutPanelSettings";
-            flowLayoutPanelSettings.Size = new Size(174, 381);
+            flowLayoutPanelSettings.Size = new Size(174, 365);
             flowLayoutPanelSettings.TabIndex = 13;
+            // 
+            // panelAi
+            // 
+            panelAi.Controls.Add(buttonChooseAi);
+            panelAi.Dock = DockStyle.Top;
+            panelAi.Location = new Point(807, 99);
+            panelAi.Name = "panelAi";
+            panelAi.Size = new Size(174, 55);
+            panelAi.TabIndex = 2;
+            // 
+            // buttonChooseAi
+            // 
+            buttonChooseAi.BackColor = Color.FromArgb(167, 157, 255);
+            buttonChooseAi.FlatAppearance.BorderColor = Color.FromArgb(228, 230, 240);
+            buttonChooseAi.FlatStyle = FlatStyle.Flat;
+            buttonChooseAi.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
+            buttonChooseAi.ForeColor = Color.FromArgb(248, 249, 255);
+            buttonChooseAi.Location = new Point(6, 12);
+            buttonChooseAi.Name = "buttonChooseAi";
+            buttonChooseAi.Size = new Size(159, 32);
+            buttonChooseAi.TabIndex = 0;
+            buttonChooseAi.Text = "Сыграть с ИИ";
+            buttonChooseAi.UseVisualStyleBackColor = false;
+            buttonChooseAi.Click += buttonChooseAi_Click;
             // 
             // panelTimer
             // 
@@ -567,6 +617,30 @@ namespace MIN.Chess.Client.Forms
             timerBonusLabel.TabIndex = 11;
             timerBonusLabel.Text = "Добавление времени";
             // 
+            // panel2
+            // 
+            panel2.Controls.Add(switchSidesButton);
+            panel2.Dock = DockStyle.Top;
+            panel2.Location = new Point(3, 213);
+            panel2.Name = "panel2";
+            panel2.Size = new Size(171, 55);
+            panel2.TabIndex = 3;
+            // 
+            // switchSidesButton
+            // 
+            switchSidesButton.BackColor = Color.FromArgb(167, 157, 255);
+            switchSidesButton.FlatAppearance.BorderColor = Color.FromArgb(228, 230, 240);
+            switchSidesButton.FlatStyle = FlatStyle.Flat;
+            switchSidesButton.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
+            switchSidesButton.ForeColor = Color.FromArgb(248, 249, 255);
+            switchSidesButton.Location = new Point(6, 12);
+            switchSidesButton.Name = "switchSidesButton";
+            switchSidesButton.Size = new Size(159, 32);
+            switchSidesButton.TabIndex = 0;
+            switchSidesButton.Text = "Сменить стороны";
+            switchSidesButton.UseVisualStyleBackColor = false;
+            switchSidesButton.Click += switchSidesButton_Click;
+            // 
             // buttonSaveSettings
             // 
             buttonSaveSettings.BackColor = Color.FromArgb(248, 249, 255);
@@ -576,9 +650,9 @@ namespace MIN.Chess.Client.Forms
             buttonSaveSettings.FlatStyle = FlatStyle.Flat;
             buttonSaveSettings.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
             buttonSaveSettings.ForeColor = Color.FromArgb(167, 157, 255);
-            buttonSaveSettings.Location = new Point(3, 486);
+            buttonSaveSettings.Location = new Point(3, 470);
             buttonSaveSettings.Name = "buttonSaveSettings";
-            buttonSaveSettings.Size = new Size(174, 42);
+            buttonSaveSettings.Size = new Size(174, 58);
             buttonSaveSettings.TabIndex = 14;
             buttonSaveSettings.Text = "Сохранить настройки";
             buttonSaveSettings.UseVisualStyleBackColor = false;
@@ -614,55 +688,64 @@ namespace MIN.Chess.Client.Forms
             flowLayoutPanelVotes.ResumeLayout(false);
             flowLayoutPanelVotes.PerformLayout();
             flowLayoutPanelSettings.ResumeLayout(false);
+            panelAi.ResumeLayout(false);
             panelTimer.ResumeLayout(false);
             panelTimer.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)timerTrackBar).EndInit();
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)bonusTrackBar).EndInit();
+            panel2.ResumeLayout(false);
             ResumeLayout(false);
         }
 
+        private MIN.Chess.Client.Components.Labels.Heading3Label switchSideQuote;
+
+        private MIN.Chess.Client.Components.Buttons.CommonButton buttonChooseAi;
+        private Panel panelAi;
+
         #endregion
 
-        private TableLayoutPanel tableLayoutPanel;
-        private DoubleBufferedPanel mainPanel;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel;
+        private MIN.Chess.Client.Components.Panels.DoubleBufferedPanel mainPanel;
         private Components.Labels.Heading3Label opponentName;
         private Components.Labels.Heading3Label selfRoleName;
         private Components.Labels.Heading1Label spectatorsCounter;
         private PictureBox spectatorLogo;
-        private TableLayoutPanel tableLayoutPanelButtons;
-        private TableLayoutPanel tableLayoutPanelSpectating;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanelButtons;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanelSpectating;
         private TableLayoutPanel tableLayoutPanelOpponent;
-        private TableLayoutPanel tableLayoutPanelSelf;
-        private Button resignButton;
-        private Button pauseButton;
-        private Components.Labels.Heading3Label restartQuote;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanelSelf;
+        private System.Windows.Forms.Button resignButton;
+        private System.Windows.Forms.Button pauseButton;
+        private MIN.Chess.Client.Components.Labels.Heading3Label restartQuote;
         private Components.Labels.Heading3Label settingsTitle;
-        private Components.Buttons.InvertedButton changeRoleButton;
-        private Button drawButton;
-        private FlowLayoutPanel flowLayoutPanelVotes;
-        private Components.Labels.Heading3Label drawQuote;
-        private FlowLayoutPanel flowLayoutPanelSettings;
-        private Panel panelTimer;
+        private MIN.Chess.Client.Components.Buttons.InvertedButton changeRoleButton;
+        private System.Windows.Forms.Button drawButton;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanelVotes;
+        private MIN.Chess.Client.Components.Labels.Heading3Label drawQuote;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanelSettings;
+        private System.Windows.Forms.Panel panelTimer;
         private Components.Labels.Heading3Label timerTitle;
         private Button buttonTimerNext;
         private Button buttonTimerPrevious;
         private Components.Labels.Heading3Label timerValueLabel;
-        private Panel panel1;
+        private System.Windows.Forms.Panel panel1;
         private Components.Labels.Heading3Label timerBonusValueLabel;
         private Button buttonBonusPrevious;
         private Button buttonBonusNext;
         private Components.Labels.Heading3Label timerBonusLabel;
         private TrackBar timerTrackBar;
         private TrackBar bonusTrackBar;
-        private Components.Buttons.InvertedButton buttonSaveSettings;
+        private MIN.Chess.Client.Components.Buttons.InvertedButton buttonSaveSettings;
         private Panel opponentNameWithTimer;
         private Components.Labels.Heading3Label opponentTimerLabel;
         private Panel selfNameAndTimer;
         private Components.Labels.Heading3Label selfTimerLabel;
         private Panel selfCapturesPanel;
         private Panel opponentCapturesPanel;
-        private Button updateStateButton;
+        private System.Windows.Forms.Button updateStateButton;
+        private Panel panel2;
+        private Components.Buttons.CommonButton switchSidesButton;
     }
 }

@@ -1,9 +1,11 @@
 ﻿using MIN.Chess.Client.Forms.HelperForms;
 using MIN.Chess.Logic.Enums;
+using MIN.Chess.Logic.Extensions;
 using MIN.Chess.Logic.Models;
 using MIN.Chess.Logic.Models.Coordination;
 using MIN.Chess.Logic.Models.Moves;
 using MIN.Chess.Logic.Services;
+using MIN.Chess.Messages.Contracts.Models;
 using MIN.Chess.Messages.Messages;
 using MIN.Ipc.Services.Contracts.Interfaces;
 using MIN.Ipc.Services.Contracts.Models;
@@ -12,7 +14,11 @@ namespace MIN.Chess.Client.Forms;
 
 public partial class MainForm
 {
-    private Dictionary<Player, Participant?> players = [];
+    private Dictionary<Player, ChessPlayer?> players = new()
+    {
+        { Player.White, null },
+        { Player.Black, null },
+    };
     private GameState? gameState;
     private Player? role;
     private Participant? participant;
@@ -212,19 +218,43 @@ public partial class MainForm
                 }, this);
                 break;
 
+            case SwitchSidesVoteMessage switchSidesVoteMessage:
+                switchSideQuote.Visible = switchSidesVoteMessage.CurrentVotes > 0;
+                break;
+
+            case SwitchSidesMessage _:
+                premoves.Clear();
+                ClearDrag();
+                ClearSelection();
+
+                (players[Player.White], players[Player.Black]) = (players[Player.Black], players[Player.White]);
+                role = role!.Value.Opponent();
+
+                mainPanel.BackgroundImage = role == Player.Black
+                    ? Properties.Resources.BoardReversed
+                    : Properties.Resources.Board;
+
+                UpdateTurnColors();
+                UpdatePlayersInfo();
+                CalculateCellRectangles();
+
+                moveCache.Clear();
+                mainPanel.Invalidate();
+                break;
+
             case DrawVoteMessage drawVoteMessage:
                 drawQuote.Visible = drawVoteMessage.CurrentVotes > 0;
                 break;
 
             case PlayerConnectedMessage playerConnectedMessage:
-                if (playerConnectedMessage.Role != Player.None)
+                if (playerConnectedMessage.Player.Role != Player.None)
                 {
-                    players[playerConnectedMessage.Role] = playerConnectedMessage.Participant;
+                    players[playerConnectedMessage.Player.Role] = playerConnectedMessage.Player;
                     changeRoleButton.Visible = CountPlayers() == 1 && role!.Value == Player.None;
 
-                    if (participant?.Id == playerConnectedMessage.Participant.Id && role!.Value == Player.None)
+                    if (participant?.Id == playerConnectedMessage.Player.Id && role!.Value == Player.None)
                     {
-                        role = playerConnectedMessage.Role;
+                        role = playerConnectedMessage.Player.Role;
                         UpdateTurnColors();
                         CalculateCellRectangles();
                         moveCache.Clear();
@@ -242,7 +272,12 @@ public partial class MainForm
             case PlayerDisconnectedMessage playerDisconnectedMessage:
                 if (playerDisconnectedMessage.Role != Player.None)
                 {
-                    players.Remove(playerDisconnectedMessage.Role);
+                    if (role!.Value == playerDisconnectedMessage.Role)
+                    {
+                        role = Player.None;
+                    }
+
+                    players[playerDisconnectedMessage.Role] = null;
                     gameState!.CurrentPlayer = Player.None;
 
                     if (role!.Value == Player.None)
