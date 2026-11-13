@@ -76,6 +76,11 @@ internal class NetworkService
     public Task SendRestartAsync() => SendMessage(new RestartRequestMessage());
 
     /// <summary>
+    /// Отправить запрос на смену сторон
+    /// </summary>
+    public Task SendSwitchSidesAsync() => SendMessage(new SwitchSidesRequestMessage());
+
+    /// <summary>
     /// Отправить запрос на обновление состояния
     /// </summary>
     public Task SendStateUpdateRequestAsync() => SendMessage(new StateUpdateRequestMessage());

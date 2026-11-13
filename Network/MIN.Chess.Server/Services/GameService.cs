@@ -87,6 +87,13 @@ internal class GameService
             GameState.Result = result;
             await SendGameResult(result);
         };
+        voteService.OnSwitchSide += async void () =>
+        {
+            roomService.SwitchSides();
+            await messageService.BroadcastAsync(new SwitchSidesMessage());
+            Restart();
+            await ManageStartGameStateOutOfPlayerPresence();
+        };
     }
 
     /// <summary>

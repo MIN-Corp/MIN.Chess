@@ -1,4 +1,3 @@
-using MIN.Chess.Client.Forms.HelperForms;
 using MIN.Chess.Client.Services;
 using MIN.Ipc.Services.Contracts.Interfaces;
 
@@ -35,6 +34,7 @@ public partial class MainForm : Form
         drawButton.BackColor = Color.Black;
         pauseButton.BackColor = Color.Black;
         updateStateButton.BackColor = Color.Black;
+        switchSideButton.BackColor = Color.Black;
         var buttonsToolTip = new ToolTip
         {
             InitialDelay = 1000,
