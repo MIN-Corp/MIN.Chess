@@ -57,12 +57,13 @@ public class SmartAgent : IChessAgent
 
     AgentType IChessAgent.Type => AgentType.Smart;
 
-    async Task<Move> IChessAgent.GetMove(GameState state)
+    async Task<Move> IChessAgent.GetMove(GameState state, CancellationToken cancellationToken)
     {
         if (state.MoveHistory.Count <= 2)
         {
             return GetRandomMove(state);
         }
+
 
         var possibleMoves = state.AllLegalMovesFor(state.CurrentPlayer).Count();
         var appropriateDepth = (int)(12 / Math.Sqrt(possibleMoves + 30)) + 3;
@@ -75,7 +76,8 @@ public class SmartAgent : IChessAgent
             1,
             ParallelDepth,
             float.NegativeInfinity,
-            float.PositiveInfinity);
+            float.PositiveInfinity,
+            cancellationToken);
         var firstLine = compute.FirstOrDefault();
 
         stopWatch.Stop();
@@ -102,7 +104,7 @@ public class SmartAgent : IChessAgent
     }
 
     private static async Task<MinMaxMove[]> MinMax(
-        GameState state, int depth, int minOrMax, int parallelDepth, float alpha, float beta)
+        GameState state, int depth, int minOrMax, int parallelDepth, float alpha, float beta, CancellationToken cancellationToken)
     {
         var currentScore = state.GetAdvantageScore(PieceAdvantageWeight, PositionalAdvantageWeight, AttackingAdvantageWeight);
         if (state.Result.HasValue || depth == 0)
@@ -124,10 +126,11 @@ public class SmartAgent : IChessAgent
                 new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
                 async (i, _) =>
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     var neighbor = state.Copy();
                     neighbor.MakeMove(moves[i]);
                     var bestMoves = await MinMax(
-                        neighbor, childDepth, childMinOrMax, parallelDepth > 0 ? parallelDepth - 1 : 0, alpha, beta);
+                        neighbor, childDepth, childMinOrMax, parallelDepth > 0 ? parallelDepth - 1 : 0, alpha, beta, cancellationToken);
                     var bestMove = bestMoves[0];
                     results[i] = bestMove;
 
@@ -146,10 +149,11 @@ public class SmartAgent : IChessAgent
         {
             for (var i = 0; i < moves.Length; i++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var neighbor = state.Copy();
                 neighbor.MakeMove(moves[i]);
                 var bestMoves = await MinMax(
-                    neighbor, childDepth, childMinOrMax, 0, alpha, beta);
+                    neighbor, childDepth, childMinOrMax, 0, alpha, beta, cancellationToken);
                 var bestMove = bestMoves[0];
                 results[i] = bestMove;
 

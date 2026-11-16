@@ -128,6 +128,7 @@ public partial class MainForm
                 premoves.Clear();
 
                 UpdateTurnColors();
+                UpdateAiButton();
                 ClearDrag();
                 ClearSelection();
                 CountPiecesCapturesForSelfAndOpponent();
@@ -144,6 +145,8 @@ public partial class MainForm
 
                 gameState.MakeMove(move);
                 UpdateTurnColors();
+                UpdateAiButton();
+
                 lastMove = move;
 
                 SyncTimerValues(moveUpdateMessage.WhiteMs, moveUpdateMessage.BlackMs, gameState.CurrentPlayer);
@@ -309,6 +312,8 @@ public partial class MainForm
             gameState.MakeMove(move);
 
             lastMove = move;
+
+            UpdateAiButton();
 
             moveCache.Clear();
             mainPanel.Invalidate();

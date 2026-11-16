@@ -118,6 +118,10 @@ internal class GameServerService
                 break;
 
             case ChangeRoleRequestMessage _:
+                if (agentService.IsBothAgentPlayersJoined())
+                {
+                    await agentService.HandleAgentRemove(message.SenderId);
+                }
                 await roomService.HandleChangeRole(message);
                 break;
 

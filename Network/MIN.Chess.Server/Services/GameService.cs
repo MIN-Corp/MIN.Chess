@@ -90,6 +90,11 @@ internal class GameService
         voteService.OnSwitchSide += async void () =>
         {
             roomService.SwitchSides();
+            if (roomService.GetPlayers()[Player.White]?.IsAi == true
+                || roomService.GetPlayers()[Player.Black]?.IsAi == true)
+            {
+                agentService.SwitchSides();
+            }
             await messageService.BroadcastAsync(new SwitchSidesMessage());
             Restart();
             await ManageStartGameStateOutOfPlayerPresence();
@@ -223,9 +228,9 @@ internal class GameService
         var senderId = Guid.Parse(messageSenderId);
         var seats = roomService.GetPlayers();
 
-        if (seats[Player.White]?.IsAi != true || seats[Player.Black]?.IsAi != true)
+        if (seats[Player.White]?.IsAi != true)
         {
-            await messageService.SendErrorAsync(senderId, "Для запуска нужны два агента");
+            await messageService.SendErrorAsync(senderId, "Для запуска нужен как минимум один агент за белых");
             return;
         }
 
@@ -265,6 +270,7 @@ internal class GameService
     /// </summary>
     public void Restart()
     {
+        agentService.CancelAgent();
         GameState.Result = null;
         GameState.ClearCache();
         lastMove = null;

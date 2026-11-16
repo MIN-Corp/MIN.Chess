@@ -21,5 +21,5 @@ public interface IChessAgent
     /// <summary>
     /// Получить ход агента от состояния
     /// </summary>
-    Task<Move> GetMove(GameState state);
+    Task<Move> GetMove(GameState state, CancellationToken cancellationToken);
 }

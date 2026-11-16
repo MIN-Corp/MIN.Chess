@@ -75,23 +75,27 @@ public partial class MainForm
         switch (playerAiState)
         {
             case PlayerAiState.BothAi:
-                buttonChooseAi.Visible = true;
-                buttonChooseAi.Text = "Начать игру";
+                changeRoleButton.Visible = true;
+                buttonChooseAi.Visible = false;
+                buttonStartAiGameplay.Visible = !IsGameOn;
                 break;
 
             case PlayerAiState.Alone:
                 buttonChooseAi.Visible = true;
-                buttonChooseAi.Text = "Сыграть с ИИ";
+                buttonStartAiGameplay.Visible = false;
                 break;
 
             case PlayerAiState.WithAi:
-                buttonChooseAi.Visible = true;
-                buttonChooseAi.Text = "Сменить ИИ";
+                buttonChooseAi.Visible = !IsGameOn;
+                buttonStartAiGameplay.Visible = role!.Value == Player.Black && !IsGameOn;
                 break;
 
             case PlayerAiState.BothHuman:
                 buttonChooseAi.Visible = false;
+                buttonStartAiGameplay.Visible = false;
                 break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
     }
 
@@ -141,15 +145,16 @@ public partial class MainForm
             return;
         }
 
-        if (self != Player.None && players[self!.Value.Opponent()]?.IsAi == true)
+        if (self != Player.None && players[self.Value.Opponent()]?.IsAi == true)
         {
             playerAiState = PlayerAiState.WithAi;
             return;
         }
 
-        if (white?.IsAi != true && black?.IsAi != true)
+        if (white?.IsAi == false && black?.IsAi == false)
         {
             playerAiState = PlayerAiState.BothHuman;
+            return;
         }
 
         playerAiState = PlayerAiState.Alone;

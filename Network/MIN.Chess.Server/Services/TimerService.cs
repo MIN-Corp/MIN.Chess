@@ -71,12 +71,6 @@ internal class TimerService
 
         logger.Log($"Settings received from {role}");
 
-        if (role != Player.White)
-        {
-            await messageService.SendErrorAsync(senderId, "У вас нету права на это");
-            return;
-        }
-
         if (GameService.GameStarted)
         {
             await messageService.SendErrorAsync(senderId, "Настройки можно изменить только до начала игры");

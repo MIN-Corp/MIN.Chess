@@ -162,9 +162,7 @@ internal class RoomService
     public async Task HandleChangeRole(INetworkMessage message)
     {
         var senderId = Guid.Parse(message.SenderId);
-        var role = ResolveRole(senderId);
-
-        logger.Log($"ChangeRole received from {role}");
+        logger.Log($"ChangeRole received from {message.SenderId}");
 
         if (IsBothPlayersJoined())
         {
@@ -235,11 +233,27 @@ internal class RoomService
     /// <summary>
     /// Убрать игрока
     /// </summary>
-    public async Task RemovePlayer(Player role)
+    public async Task RemovePlayer(Player role, bool stayAsSpectator = false)
     {
+        var participant = new ChessPlayer(players[role]!);
         players[role] = null;
         OnPlayerLeft?.Invoke(role);
         await messageService.BroadcastAsync(new PlayerDisconnectedMessage { Role = role });
+
+        if (stayAsSpectator)
+        {
+            logger.Log($"{participant.Id} joined as Spectator");
+            spectators[participant.Id] = participant;
+
+            OnPlayerJoined?.Invoke(Player.None);
+
+            participant.Role = Player.None;
+
+            await messageService.BroadcastExcludingAsync(new PlayerConnectedMessage()
+            {
+                Player = participant,
+            }, participant.Id);
+        }
     }
 
     /// <summary>

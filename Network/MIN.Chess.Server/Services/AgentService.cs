@@ -12,9 +12,19 @@ internal class AgentService
     private readonly MessageService messageService;
     private readonly RoomService roomService;
     private readonly IChessAgentFactory agentFactory;
+    private CancellationTokenSource agentCts = new();
 
-    private readonly Dictionary<Player, IChessAgent> agents = new();
-    private readonly Dictionary<Player, ChessPlayer> agentPlayers = new();
+    private readonly Dictionary<Player, IChessAgent?> agents = new()
+    {
+        { Player.White, null },
+        { Player.Black, null },
+    };
+
+    private readonly Dictionary<Player, ChessPlayer?> agentPlayers = new()
+    {
+        { Player.White, null },
+        { Player.Black, null },
+    };
 
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="AgentService"/>
@@ -24,6 +34,39 @@ internal class AgentService
         this.messageService = messageService;
         this.roomService = roomService;
         this.agentFactory = agentFactory;
+    }
+
+    /// <summary>
+    /// Сменить стороны агентов
+    /// </summary>
+    public void SwitchSides()
+    {
+        (agents[Player.White], agents[Player.Black]) = (agents[Player.Black], agents[Player.White]);
+        (agentPlayers[Player.White], agentPlayers[Player.Black]) = (agentPlayers[Player.Black], agentPlayers[Player.White]);
+    }
+
+    /// <summary>
+    /// Зашло ли оба игрока как ИИ
+    /// </summary>
+    public bool IsBothAgentPlayersJoined() => IsWhiteAiPlayerJoined() && IsBlackAiPlayerJoined();
+
+    /// <summary>
+    /// Зашёл ли белый игрок как ИИ
+    /// </summary>
+    public bool IsWhiteAiPlayerJoined() => agentPlayers[Player.White] != null;
+
+    /// <summary>
+    /// Зашёл ли чёрный игрок как ИИ
+    /// </summary>
+    public bool IsBlackAiPlayerJoined() => agentPlayers[Player.Black] != null;
+
+    /// <summary>
+    /// Отменить ход агента
+    /// </summary>
+    public void CancelAgent()
+    {
+        agentCts.Cancel();
+        agentCts = new CancellationTokenSource();
     }
 
     /// <summary>
@@ -50,7 +93,7 @@ internal class AgentService
 
         agents[agentRole] = agent;
         agentPlayers[agentRole] = agentPlayer;
-
+        CancelAgent();
         await roomService.HandleParticipantJoining(agentPlayer);
     }
 
@@ -78,6 +121,7 @@ internal class AgentService
 
         agents[agentRole] = agent;
         agentPlayers[agentRole] = agentPlayer;
+        CancelAgent();
         await roomService.ReplacePlayer(senderRole.Opponent(), agentPlayer);
     }
 
@@ -94,11 +138,13 @@ internal class AgentService
             return;
         }
 
-        agents.Remove(senderRole.Opponent());
-        agentPlayers.Remove(senderRole.Opponent());
-        await roomService.RemovePlayer(senderRole.Opponent());
-    }
+        var opponnentOrBlack = senderRole == Player.None ? Player.Black : senderRole.Opponent();
 
+        agents[opponnentOrBlack] = null;
+        agentPlayers[opponnentOrBlack] = null;
+        CancelAgent();
+        await roomService.RemovePlayer(opponnentOrBlack);
+    }
 
     /// <summary>
     /// Обработать битву агентов
@@ -122,19 +168,19 @@ internal class AgentService
             await HandleAgentChange(senderIdString, opponentAgentType);
         }
 
-        await roomService.RemovePlayer(senderRole);
+        await roomService.RemovePlayer(senderRole, stayAsSpectator: true);
 
         var agent = agentFactory.GetAgent(selfAgentType);
-        var agentRole = senderRole;
         var agentPlayer = new ChessPlayer(agent.DisplayName)
         {
             IsAi = true,
             AgentType = agent.Type,
-            Role = agentRole
+            Role = senderRole
         };
 
-        agents[agentRole] = agent;
-        agentPlayers[agentRole] = agentPlayer;
+        agents[senderRole] = agent;
+        agentPlayers[senderRole] = agentPlayer;
+        CancelAgent();
         await roomService.HandleParticipantJoining(agentPlayer);
     }
 
@@ -143,9 +189,16 @@ internal class AgentService
     /// </summary>
     public async Task<Move?> HandleAgentMove(GameState gameState)
     {
-        if (agents.TryGetValue(gameState.CurrentPlayer, out var agent))
+        if (agents.TryGetValue(gameState.CurrentPlayer, out var agent) && agent != null)
         {
-            return await agent.GetMove(gameState);
+            try
+            {
+                return await agent.GetMove(gameState, agentCts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
+            }
         }
 
         Console.WriteLine("Агент не нашёлся");
@@ -156,23 +209,25 @@ internal class AgentService
     /// Получить идентификатор агента
     /// </summary>
     public Guid GetAgentId(Player role)
-        => agentPlayers.TryGetValue(role, out var agentPlayer) ? agentPlayer.Id : Guid.Empty;
+        => agentPlayers.TryGetValue(role, out var agentPlayer) ? agentPlayer?.Id ?? Guid.Empty : Guid.Empty;
 
     private async Task<bool> HandleAgentChoosingAllowance(Guid senderId, Player senderRole)
     {
-        if (senderRole == Player.None)
+        if (senderRole == Player.None && (agentPlayers[Player.White] == null || agentPlayers[Player.Black] == null))
         {
-            await messageService.SendErrorAsync(senderId, "Ты не игрок");
+            await messageService.SendErrorAsync(senderId, "Игроки уже играют с ИИ");
             return false;
         }
 
-        if (roomService.IsBothPlayersJoined()
-            && !roomService.GetPlayers()[senderRole.Opponent()]?.IsAi == true)
+        var opponnentOrBlack = senderRole == Player.None ? Player.Black : senderRole.Opponent();
+
+        if (!roomService.IsBothPlayersJoined()
+            || !roomService.GetPlayers()[opponnentOrBlack]?.IsAi != true)
         {
-            await messageService.SendErrorAsync(senderId, "С тобой уже играет другой игрок");
-            return false;
+            return true;
         }
 
-        return true;
+        await messageService.SendErrorAsync(senderId, "С тобой уже играет другой игрок");
+        return false;
     }
 }
