@@ -34,7 +34,7 @@ public record InitResponseMessage : BaseNetworkMessage
     /// <summary>
     /// Играющие игроки
     /// </summary>
-    public required IReadOnlyDictionary<Player, Participant?> ActivePlayers { get; init; }
+    public required IReadOnlyDictionary<Player, ChessPlayer?> ActivePlayers { get; init; }
 
     /// <summary>
     /// Количество наблюдающих

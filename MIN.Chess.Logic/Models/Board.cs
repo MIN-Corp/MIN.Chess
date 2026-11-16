@@ -126,14 +126,16 @@ public class Board
         SetHasMovedForKingAndRook(board, Player.Black, canCastlek, canCastleq);
 
         // 3. En passant
-        if (enPassant != "-")
+        if (enPassant == "-")
         {
-            var file = enPassant[0] - 'a';
-            var rank = 8 - (enPassant[1] - '0');
-            var targetPos = new Position(rank, file);
-            var currentPlayer = activeColor == "w" ? Player.White : Player.Black;
-            board.SetPawnSkipPosition(currentPlayer.Opponent(), targetPos);
+            return board;
         }
+
+        var file = enPassant[0] - 'a';
+        var rank = 8 - (enPassant[1] - '0');
+        var targetPos = new Position(rank, file);
+        var currentPlayer = activeColor == "w" ? Player.White : Player.Black;
+        board.SetPawnSkipPosition(currentPlayer.Opponent(), targetPos);
 
         return board;
     }
@@ -330,7 +332,10 @@ public class Board
         return wBishopPos.SquareColor() == bBishopPos.SquareColor();
     }
 
-    private Position FindPiece(Player player, PieceType type)
+    /// <summary>
+    /// Найти фигуру у игрока
+    /// </summary>
+    public Position FindPiece(Player player, PieceType type)
         => PiecePositionsFor(player).First(x => this[x]?.Type == type);
 
     private bool IsUnmobedKingAndRook(Position kingPos, Position rookPos)

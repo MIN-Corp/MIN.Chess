@@ -9,10 +9,15 @@ namespace MIN.Chess.Logic.Models;
 /// </summary>
 public class GameState
 {
-    private readonly Dictionary<string, int> stateHistory = [];
+    private IEnumerable<Move>? cachedLegalMoves;
+    private Dictionary<string, int> stateHistory = [];
     private int noCapturesOrPawnMoves;
     private string stateString;
-    private IEnumerable<Move>? cachedLegalMoves;
+
+    /// <summary>
+    /// Список ходов
+    /// </summary>
+    public List<Move> MoveHistory { get; private init; } = [];
 
     /// <summary>
     /// Доска с фигурами
@@ -32,12 +37,18 @@ public class GameState
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="GameState"/>
     /// </summary>
-    public GameState(Board board, Player currentPlayer)
+    public GameState(Board board, Player currentPlayer, bool asCopy = false)
     {
         Board = board;
         CurrentPlayer = currentPlayer;
 
         stateString = new StateString(CurrentPlayer, Board).ToString();
+
+        if (asCopy)
+        {
+            return;
+        }
+
         stateHistory[stateString] = 1;
     }
 
@@ -51,12 +62,7 @@ public class GameState
     /// </summary>
     public IEnumerable<Move> LegalMovesForPiece(Position position, Player? role = null)
     {
-        if (Board.IsEmpty(position) || Board[position]?.Color != CurrentPlayer)
-        {
-            return [];
-        }
-
-        if (role != null && (role != CurrentPlayer || role == Player.None))
+        if (Board.IsEmpty(position) || Board[position]?.Color != CurrentPlayer || role != null && (role != CurrentPlayer || role == Player.None))
         {
             return [];
         }
@@ -80,7 +86,7 @@ public class GameState
 
         var piece = board[position];
 
-        if ((role != null && role == Player.None) || piece?.Color != role)
+        if (role == Player.None || piece?.Color != role)
         {
             return [];
         }
@@ -94,6 +100,8 @@ public class GameState
     /// </summary>
     public void MakeMove(Move move)
     {
+        MoveHistory.Add(move);
+
         Board.SetPawnSkipPosition(CurrentPlayer, null);
         var captureOrPawn = move.Execute(Board);
 
@@ -111,6 +119,12 @@ public class GameState
         UpdateStateString();
         cachedLegalMoves = GenerateAllLegalMoves(CurrentPlayer);
     }
+
+    /// <summary>
+    /// Получить последний сыгранный ход
+    /// </summary>
+    public Move? GetLastMove()
+        => MoveHistory.LastOrDefault();
 
     private IEnumerable<Move> GenerateAllLegalMoves(Player player)
     {
@@ -140,12 +154,13 @@ public class GameState
     public void ClearCache()
     {
         cachedLegalMoves = null;
+        MoveHistory.Clear();
     }
 
     /// <summary>
     /// Сработало ли правило пятидесяти ходов
     /// </summary>
-    public bool FiftyMoveRule() => (noCapturesOrPawnMoves / 2) == 50;
+    private bool FiftyMoveRule() => (noCapturesOrPawnMoves / 2) == 50;
 
     /// <summary>
     /// Проверить на окончание игры
@@ -154,14 +169,9 @@ public class GameState
     {
         if (!cachedLegalMoves?.Any() == true)
         {
-            if (Board.IsInCheck(CurrentPlayer))
-            {
-                Result = Models.Result.Win(CurrentPlayer.Opponent());
-            }
-            else
-            {
-                Result = Models.Result.Draw(EndReason.StaleMate);
-            }
+            Result = Board.IsInCheck(CurrentPlayer)
+                ? Models.Result.Win(CurrentPlayer.Opponent())
+                : Models.Result.Draw(EndReason.StaleMate);
         }
         else if (Board.InsufficientMaterial())
         {
@@ -176,6 +186,91 @@ public class GameState
             Result = Models.Result.Draw(EndReason.ThreefoldRepetition);
         }
     }
+
+    /// <summary>
+    /// Оценить эвристическое состояние, выигрывает ли тот, кого сейчас текущий ход
+    /// </summary>
+    public float GetAdvantageScore(float pieceAdvantageWeight, float positionalAdvantageWeight, float attackingPiecesAdvantageWeight)
+    {
+        CheckForGameOver();
+
+        if (Result.HasValue && Result.Value.Winner == CurrentPlayer && Result.Value.Reason == EndReason.CheckMate)
+        {
+            return float.PositiveInfinity;
+        }
+
+        if (Result.HasValue && Result.Value.Winner != CurrentPlayer && Result.Value.Reason == EndReason.CheckMate)
+        {
+            return float.NegativeInfinity;
+        }
+
+        if (Result.HasValue)
+        {
+            return 0.0f;
+        }
+
+        var pieceAdvantage = (GetOverallPieceScoreFor(CurrentPlayer)
+                                             - GetOverallPieceScoreFor(CurrentPlayer.Opponent())) * pieceAdvantageWeight;
+
+        var pieceStartActivityAdvantage = (GetPiecesStartDevelopmentFor(CurrentPlayer)
+                                      - GetPiecesStartDevelopmentFor(CurrentPlayer.Opponent())) * positionalAdvantageWeight;
+
+        var pieceActivityAdvantage = (GetPiecesDevelopmentFor(CurrentPlayer)
+                                      - GetPiecesDevelopmentFor(CurrentPlayer.Opponent())) * positionalAdvantageWeight;
+
+        var attackingPiecesAdvantage = (GetOverallAttackingPiecesScoreFor(CurrentPlayer)
+                                                        - GetOverallAttackingPiecesScoreFor(CurrentPlayer.Opponent())) * attackingPiecesAdvantageWeight;
+
+        // var defendingPiecesAdvantage = (GetOverallDefendingPiecesScoreFor(CurrentPlayer)
+        //                                 - GetOverallDefendingPiecesScoreFor(CurrentPlayer.Opponent())) * attackingPiecesAdvantageWeight;
+
+        var kingSafetyAdvantage = (GetKingSafetyAdvantage(CurrentPlayer)
+                                        - GetKingSafetyAdvantage(CurrentPlayer.Opponent())) * positionalAdvantageWeight;
+
+        return pieceAdvantage + pieceStartActivityAdvantage + pieceActivityAdvantage + attackingPiecesAdvantage + kingSafetyAdvantage;
+    }
+
+    /// <summary>
+    /// Копия состояния игры
+    /// </summary>
+    public GameState Copy()
+        => new(Board.Copy(), CurrentPlayer, asCopy: true)
+        {
+            MoveHistory = MoveHistory.ToList(),
+            stateString = stateString,
+            stateHistory = stateHistory.ToDictionary(x => x.Key, x => x.Value),
+            noCapturesOrPawnMoves = noCapturesOrPawnMoves,
+            Result = Result
+        };
+
+    private float GetOverallPieceScoreFor(Player player)
+        => Enum.GetValues(typeof(PieceType)).Cast<PieceType>()
+            .Sum(type => Board.CountOf(player, type) * type.GetScore());
+
+    private float GetPiecesStartDevelopmentFor(Player player)
+        => Board.PiecePositionsFor(player)
+            .Sum(position => Board[position]!.HasMoved ? 1 : 0);
+
+    private float GetPiecesDevelopmentFor(Player player)
+        => Board.PiecePositionsFor(player)
+            .Sum(position => player == Player.White ? 8 - position.Row : position.Row);
+
+    private float GetOverallAttackingPiecesScoreFor(Player player)
+        => Board.PiecePositionsFor(player).Select(x => (Board[x]?
+            .GetPremovePositions(x, Board) ?? []).Where(y => Board[x]?.Color != Board[y]?.Color)
+            .Sum(z => Board[z]?.Type.GetScore() ?? 0.0f)).Sum();
+
+    private float GetKingSafetyAdvantage(Player player)
+    {
+        var kingPosition = Board.FindPiece(player, PieceType.King);
+        return Board[kingPosition]!.GetPremovePositions(kingPosition, Board).Where(x => Board[x]?.Color == player)
+            .Sum(y => Board[y]?.Type.GetScore() ?? 0.0f);
+    }
+
+    private float GetOverallDefendingPiecesScoreFor(Player player)
+        => Board.PiecePositionsFor(player).Select(x => (Board[x]?
+                .GetPremovePositions(x, Board) ?? []).Where(y => Board[x]?.Color == Board[y]?.Color)
+            .Sum(z => Board[z]?.Type.GetScore() ?? 0.0f)).Sum();
 
     private void UpdateStateString()
     {

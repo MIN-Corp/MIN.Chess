@@ -3,6 +3,7 @@
 
     <Copyright>2026 CasCade</Copyright>
     <Authors>CasCade Karo4a</Authors>
+    <Version>1.1.0</Version>
 
     <!-- Pack everything with embedded .pdb -->
     <EmbedAllSources>true</EmbedAllSources>

@@ -1,4 +1,5 @@
 ﻿using MIN.Chess.Logic.Enums;
+using MIN.Chess.Messages.Contracts.Models;
 using MIN.Chess.Messages.Messages;
 using MIN.Chess.Server.Helpers;
 using MIN.Ipc.Services.Contracts.Interfaces;
@@ -14,10 +15,10 @@ internal class RoomService
     private readonly MessageService messageService;
     private readonly ILoggerProvider logger;
 
-    private readonly static Dictionary<Guid, Participant> spectators = [];
+    private readonly static Dictionary<Guid, ChessPlayer> spectators = [];
     private readonly static HashSet<Guid> loadedParticipants = [];
     private readonly static Dictionary<Guid, InitRequestMessage> pendingInits = [];
-    private readonly static Dictionary<Player, Participant?> players = new()
+    private readonly static Dictionary<Player, ChessPlayer?> players = new()
     {
         { Player.White, null },
         { Player.Black, null },
@@ -95,7 +96,7 @@ internal class RoomService
     /// <summary>
     /// Получить список игроков
     /// </summary>
-    public Dictionary<Player, Participant?> GetPlayers() => players;
+    public Dictionary<Player, ChessPlayer?> GetPlayers() => players;
 
     /// <summary>
     /// Получить количество смотрящих партию
@@ -116,6 +117,12 @@ internal class RoomService
     /// Зашёл ли чёрный игрок
     /// </summary>
     public bool IsBlackPlayersJoined() => players[Player.Black] != null;
+
+    /// <summary>
+    /// Сменить стороны
+    /// </summary>
+    public void SwitchSides() =>
+        (players[Player.White], players[Player.Black]) = (players[Player.Black], players[Player.White]);
 
     /// <summary>
     /// Обработать инициализацию игрока
@@ -155,9 +162,7 @@ internal class RoomService
     public async Task HandleChangeRole(INetworkMessage message)
     {
         var senderId = Guid.Parse(message.SenderId);
-        var role = ResolveRole(senderId);
-
-        logger.Log($"ChangeRole received from {role}");
+        logger.Log($"ChangeRole received from {message.SenderId}");
 
         if (IsBothPlayersJoined())
         {
@@ -180,10 +185,14 @@ internal class RoomService
 
             OnPlayerJoined?.Invoke(Player.White);
 
+            var white = new ChessPlayer(participant)
+            {
+                Role = Player.White
+            };
+
             await messageService.BroadcastAsync(new PlayerConnectedMessage()
             {
-                Role = Player.White,
-                Participant = participant,
+                Player = white,
             });
         }
         else if (players[Player.Black] == null)
@@ -193,10 +202,14 @@ internal class RoomService
 
             OnPlayerJoined?.Invoke(Player.Black);
 
+            var black = new ChessPlayer(participant)
+            {
+                Role = Player.Black
+            };
+
             await messageService.BroadcastAsync(new PlayerConnectedMessage()
             {
-                Role = Player.Black,
-                Participant = participant,
+                Player = black,
             });
         }
 
@@ -206,6 +219,41 @@ internal class RoomService
         {
             Role = Player.None,
         });
+    }
+
+    /// <summary>
+    /// Сменить игрока
+    /// </summary>
+    public async Task ReplacePlayer(Player role, ChessPlayer replacement)
+    {
+        players[role] = replacement;
+        await messageService.BroadcastAsync(new PlayerConnectedMessage { Player = replacement });
+    }
+
+    /// <summary>
+    /// Убрать игрока
+    /// </summary>
+    public async Task RemovePlayer(Player role, bool stayAsSpectator = false)
+    {
+        var participant = new ChessPlayer(players[role]!);
+        players[role] = null;
+        OnPlayerLeft?.Invoke(role);
+        await messageService.BroadcastAsync(new PlayerDisconnectedMessage { Role = role });
+
+        if (stayAsSpectator)
+        {
+            logger.Log($"{participant.Id} joined as Spectator");
+            spectators[participant.Id] = participant;
+
+            OnPlayerJoined?.Invoke(Player.None);
+
+            participant.Role = Player.None;
+
+            await messageService.BroadcastExcludingAsync(new PlayerConnectedMessage()
+            {
+                Player = participant,
+            }, participant.Id);
+        }
     }
 
     /// <summary>
@@ -226,19 +274,20 @@ internal class RoomService
     /// <summary>
     /// Обработать присоединения участника
     /// </summary>
-    public async Task HandleParticipantJoining(Participant participant)
+    public async Task HandleParticipantJoining(ChessPlayer participant)
     {
-        if (IsBothPlayersJoined())
+        if (IsBothPlayersJoined() && !participant.IsAi)
         {
             logger.Log($"{participant.Id} joined as Spectator");
             spectators[participant.Id] = participant;
 
             OnPlayerJoined?.Invoke(Player.None);
 
+            participant.Role = Player.None;
+
             await messageService.BroadcastExcludingAsync(new PlayerConnectedMessage()
             {
-                Role = Player.None,
-                Participant = participant,
+                Player = participant,
             }, participant.Id);
 
             if (pendingInits.Remove(participant.Id, out _))
@@ -256,10 +305,11 @@ internal class RoomService
 
             OnPlayerJoined?.Invoke(Player.White);
 
+            participant.Role = Player.White;
+
             await messageService.BroadcastExcludingAsync(new PlayerConnectedMessage()
             {
-                Role = Player.White,
-                Participant = participant,
+                Player = participant,
             }, participant.Id);
         }
         else if (players[Player.Black] == null)
@@ -269,10 +319,11 @@ internal class RoomService
 
             OnPlayerJoined?.Invoke(Player.Black);
 
+            participant.Role = Player.Black;
+
             await messageService.BroadcastExcludingAsync(new PlayerConnectedMessage()
             {
-                Role = Player.Black,
-                Participant = participant,
+                Player = participant,
             }, participant.Id);
         }
 
@@ -289,10 +340,8 @@ internal class RoomService
     {
         loadedParticipants.Remove(participantId);
 
-        if (spectators.ContainsKey(participantId))
+        if (spectators.Remove(participantId))
         {
-            spectators.Remove(participantId);
-
             OnPlayerLeft?.Invoke(Player.None);
 
             await messageService.BroadcastExcludingAsync(new PlayerDisconnectedMessage()

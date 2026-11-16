@@ -94,4 +94,44 @@ public enum NetworkMessageType : byte
     /// Игрок прогрузился, готов принимать данные с сервера
     /// </summary>
     PlayerLoaded = 17,
+
+    /// <summary>
+    /// Игрок хочет сыграть с ИИ
+    /// </summary>
+    AgentChoose = 18,
+
+    /// <summary>
+    /// Игрок хочет сменить сторону
+    /// </summary>
+    SwitchSidesRequest = 19,
+
+    /// <summary>
+    /// Голос на смену сторон
+    /// </summary>
+    SwitchSidesVote = 20,
+
+    /// <summary>
+    /// Смена сторон
+    /// </summary>
+    SwitchSides = 21,
+
+    /// <summary>
+    /// Запрос на смену ИИ агента
+    /// </summary>
+    AgentChangeRequest = 22,
+
+    /// <summary>
+    /// Запрос на убирание ИИ агента
+    /// </summary>
+    AgentRemoveRequest = 23,
+
+    /// <summary>
+    /// Запрос на поставление на своё место ИИ агента
+    /// </summary>
+    AgentVsAgentRequest = 24,
+
+    /// <summary>
+    /// Просьюа начать игру
+    /// </summary>
+    StartGameRequest = 25
 }

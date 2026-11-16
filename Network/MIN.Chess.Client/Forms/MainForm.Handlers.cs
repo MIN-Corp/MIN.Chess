@@ -1,4 +1,9 @@
-﻿namespace MIN.Chess.Client.Forms;
+﻿using MIN.Chess.Client.Contracts.Enums;
+using MIN.Chess.Client.Forms.HelperForms;
+using MIN.Chess.Logic.Enums;
+using MIN.Chess.Logic.Extensions;
+
+namespace MIN.Chess.Client.Forms;
 
 public partial class MainForm
 {
@@ -31,9 +36,19 @@ public partial class MainForm
         await network.SendRestartAsync();
     }
 
+    private async void switchSidesQuote_Click(object sender, EventArgs e)
+    {
+        await network.SendSwitchSidesAsync();
+    }
+
     private async void changeRoleButton_Click(object sender, EventArgs e)
     {
         await network.SendChangeRoleAsync();
+    }
+
+    private async void switchSidesButton_Click(object sender, EventArgs e)
+    {
+        await network.SendSwitchSidesAsync();
     }
 
     private async void resignButton_Click(object sender, EventArgs e)
@@ -52,5 +67,46 @@ public partial class MainForm
     private async void buttonSaveSettings_Click(object sender, EventArgs e)
     {
         await network.SendGameSettingsAsync(timerMinutes[timerIndex], bonusSeconds[bonusIndex]);
+    }
+
+    private void buttonChooseAi_Click(object sender, EventArgs e)
+    {
+        var opponnentOrBlack = role!.Value == Player.None ? Player.Black : role!.Value.Opponent();
+        var chose = new AgentChoosingMenu(players[opponnentOrBlack]?.AgentType);
+        chose.OnOptionSelected += async void (type, asSelf) =>
+        {
+            if (type == null)
+            {
+                await network.SendAgentRemoveAsync();
+                return;
+            }
+
+            var opponent = players[opponnentOrBlack];
+
+            if (asSelf)
+            {
+                await network.SendAgentVsAgentAsync(type.Value, opponent!.AgentType!.Value);
+                return;
+            }
+
+            switch (playerAiState)
+            {
+                case PlayerAiState.Alone:
+                    await network.SendAgentChooseAsync(type.Value);
+                    break;
+                case PlayerAiState.WithAi:
+                    await network.SendAgentChangeAsync(type.Value);
+                    break;
+            }
+        };
+        chose.ShowDialog();
+    }
+
+    private async void startAiMovesButton_Click(object sender, EventArgs e)
+    {
+        if (playerAiState is PlayerAiState.BothAi or PlayerAiState.WithAi)
+        {
+            await network.SendStartGameAsync();
+        }
     }
 }

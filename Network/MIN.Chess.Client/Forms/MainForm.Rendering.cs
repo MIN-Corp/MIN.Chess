@@ -610,7 +610,7 @@ public partial class MainForm
         opponentTimerLabel.ForeColor = opponentName.ForeColor;
         selfTimerLabel.ForeColor = selfRoleName.ForeColor;
 
-        var hasRightToChangeSettings = role!.Value == Player.White && !IsGameOn;
+        var hasRightToChangeSettings = role!.Value != Player.None && !IsGameOn;
 
         tableLayoutPanelButtons.Visible = role!.Value != Player.None && IsGameOn;
         flowLayoutPanelSettings.Visible = hasRightToChangeSettings;

@@ -1,4 +1,5 @@
-﻿using MIN.Chess.Messages;
+﻿using MIN.Chess.Agents.Enums;
+using MIN.Chess.Messages;
 using MIN.Chess.Messages.Contracts.Models;
 using MIN.Chess.Messages.Messages;
 using MIN.Ipc.Services.Contracts.Interfaces;
@@ -75,6 +76,11 @@ internal class NetworkService
     public Task SendRestartAsync() => SendMessage(new RestartRequestMessage());
 
     /// <summary>
+    /// Отправить запрос на смену сторон
+    /// </summary>
+    public Task SendSwitchSidesAsync() => SendMessage(new SwitchSidesRequestMessage());
+
+    /// <summary>
     /// Отправить запрос на обновление состояния
     /// </summary>
     public Task SendStateUpdateRequestAsync() => SendMessage(new StateUpdateRequestMessage());
@@ -88,6 +94,41 @@ internal class NetworkService
     /// Отправить оповещение о загрузке
     /// </summary>
     public Task SendPlayerLoadedAsync() => SendMessage(new PlayerLoadedMessage());
+
+    /// <summary>
+    /// Отправить желание сыграть с агентом
+    /// </summary>
+    public Task SendAgentChooseAsync(AgentType type) => SendMessage(new AgentChooseMessage()
+    {
+        AgentType = type
+    });
+
+    /// <summary>
+    /// Отправить желание сменить агента
+    /// </summary>
+    public Task SendAgentChangeAsync(AgentType type) => SendMessage(new AgentChangeRequestMessage()
+    {
+        AgentType = type
+    });
+
+    /// <summary>
+    /// Отправить желание убрать агента
+    /// </summary>
+    public Task SendAgentRemoveAsync() => SendMessage(new AgentRemoveRequestMessage());
+
+    /// <summary>
+    /// Отправить желание узреть битву агентов
+    /// </summary>
+    public Task SendAgentVsAgentAsync(AgentType selfType, AgentType opponentType) => SendMessage(new AgentVsAgentRequestMessage()
+    {
+        SelfAgentType = selfType,
+        OpponentAgentType = opponentType
+    });
+
+    /// <summary>
+    /// Отправить желание начать битву агентов
+    /// </summary>
+    public Task SendStartGameAsync() => SendMessage(new StartGameRequestMessage());
 
     /// <summary>
     /// Отправить настройки

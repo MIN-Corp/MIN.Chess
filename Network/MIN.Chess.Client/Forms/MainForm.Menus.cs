@@ -10,6 +10,7 @@ public partial class MainForm
 {
     private GameOverMenu? gameOverMenu;
     private PauseMenu? pauseMenu;
+    private PlayerAiState playerAiState;
 
     private void ShowGameOver(Result result, Player currentPlayer)
     {
@@ -69,6 +70,35 @@ public partial class MainForm
         pauseMenu?.UpdateVoteDisplay(restartVote, CountPlayers());
     }
 
+    private void UpdateAiButton()
+    {
+        switch (playerAiState)
+        {
+            case PlayerAiState.BothAi:
+                changeRoleButton.Visible = true;
+                buttonChooseAi.Visible = false;
+                buttonStartAiGameplay.Visible = !IsGameOn;
+                break;
+
+            case PlayerAiState.Alone:
+                buttonChooseAi.Visible = true;
+                buttonStartAiGameplay.Visible = false;
+                break;
+
+            case PlayerAiState.WithAi:
+                buttonChooseAi.Visible = !IsGameOn;
+                buttonStartAiGameplay.Visible = role!.Value == Player.Black && !IsGameOn;
+                break;
+
+            case PlayerAiState.BothHuman:
+                buttonChooseAi.Visible = false;
+                buttonStartAiGameplay.Visible = false;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+    }
+
     private void UpdatePlayersInfo()
     {
         players.TryGetValue(role!.Value == Player.None ? Player.White : role!.Value, out var player1);
@@ -92,6 +122,42 @@ public partial class MainForm
         {
             spectatorsCounter.Text = spectatorsCount.ToString();
         }
+
+        UpdatePlayerAiState();
+        UpdateAiButton();
+    }
+
+    private void UpdatePlayerAiState()
+    {
+        var self = role;
+        var white = players[Player.White];
+        var black = players[Player.Black];
+
+        if (white?.IsAi == true && black?.IsAi == true)
+        {
+            playerAiState = PlayerAiState.BothAi;
+            return;
+        }
+
+        if (self != Player.None && players[self!.Value.Opponent()] == null)
+        {
+            playerAiState = PlayerAiState.Alone;
+            return;
+        }
+
+        if (self != Player.None && players[self.Value.Opponent()]?.IsAi == true)
+        {
+            playerAiState = PlayerAiState.WithAi;
+            return;
+        }
+
+        if (white?.IsAi == false && black?.IsAi == false)
+        {
+            playerAiState = PlayerAiState.BothHuman;
+            return;
+        }
+
+        playerAiState = PlayerAiState.Alone;
     }
 
     private int CountPlayers()
